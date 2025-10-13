@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthRequired } from "@/hooks/useAuthRequired";
 import { toast } from "sonner";
+import { useChat } from "@/hooks/useChat";
+import { useNavigate } from "react-router-dom";
 
 interface VehicleCardProps {
   id?: any;
@@ -41,6 +43,8 @@ export const VehicleCard = ({
   listingId,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
+  const { findOrCreateChat } = useChat();
+  const navigate = useNavigate();
 
   const handleLike = () => {
     requireAuth(() => {
@@ -67,12 +71,10 @@ export const VehicleCard = ({
     }
     
     requireAuth(async () => {
-      const { useChat } = await import("@/hooks/useChat");
-      const { findOrCreateChat } = useChat();
       const chatId = await findOrCreateChat(listingId, sellerId);
       
       if (chatId) {
-        window.location.href = `/chat?chatId=${chatId}`;
+        navigate(`/chat?chatId=${chatId}`);
       }
     });
   };
