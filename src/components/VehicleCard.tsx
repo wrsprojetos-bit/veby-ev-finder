@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface VehicleCardProps {
+  id?: any;
   title: string;
   price: string;
   location: string;
@@ -19,6 +20,7 @@ interface VehicleCardProps {
 }
 
 export const VehicleCard = ({
+  id,
   title,
   price,
   location,
