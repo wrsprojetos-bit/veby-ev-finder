@@ -41,18 +41,15 @@ const Chat = () => {
 
   const handleSendMessage = () => {
     if (message.trim()) {
-      // TODO: Implementar envio de mensagem ao Supabase
-      console.log("Mensagem enviada:", message);
+      console.log("Enviando mensagem:", message);
       setMessage("");
     }
   };
 
   if (selectedChat !== null) {
-    const chat = conversations.find(c => c.id === selectedChat);
-    if (!chat) return null;
-
+    const chat = conversations[selectedChat];
     return (
-      <div className="min-h-screen bg-background pb-16 flex flex-col">
+      <div className="min-h-screen bg-background pb-16">
         <header className="fixed top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
           <div className="flex items-center gap-3 px-4 h-16">
             <button onClick={() => setSelectedChat(null)} className="text-foreground">
@@ -63,36 +60,28 @@ const Chat = () => {
               <AvatarFallback>{chat.name[0]}</AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="font-semibold">{chat.name}</h1>
+              <h1 className="font-bold">{chat.name}</h1>
               <p className="text-xs text-muted-foreground">Online</p>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 pt-16 pb-20 px-4 overflow-y-auto">
-          <div className="space-y-4 py-4">
-            <div className="flex justify-start">
-              <div className="bg-card border border-border rounded-lg px-4 py-2 max-w-[75%]">
-                <p className="text-sm">{chat.lastMessage}</p>
-                <span className="text-xs text-muted-foreground">{chat.time}</span>
-              </div>
-            </div>
-            <div className="flex justify-end">
-              <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2 max-w-[75%]">
-                <p className="text-sm">Sim, ainda está! Quer marcar de ver?</p>
-                <span className="text-xs opacity-80">Agora</span>
-              </div>
+        <main className="pt-16 pb-20 px-4 space-y-4">
+          <div className="flex justify-start">
+            <div className="bg-card px-4 py-2 rounded-2xl rounded-tl-none max-w-[70%]">
+              <p className="text-sm">{chat.lastMessage}</p>
+              <span className="text-xs text-muted-foreground">{chat.time}</span>
             </div>
           </div>
         </main>
 
-        <div className="fixed bottom-16 left-0 right-0 bg-card/95 backdrop-blur-lg border-t border-border p-4">
-          <div className="flex gap-2">
+        <div className="fixed bottom-16 left-0 right-0 bg-background border-t border-border px-4 py-3">
+          <div className="flex items-center gap-2">
             <Input
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Digite sua mensagem..."
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+              placeholder="Digite uma mensagem..."
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
               className="flex-1"
             />
             <Button onClick={handleSendMessage} size="icon">
@@ -117,10 +106,10 @@ const Chat = () => {
       <main className="pt-16">
         {conversations.length > 0 ? (
           <div className="divide-y divide-border">
-            {conversations.map((conversation) => (
+            {conversations.map((conversation, index) => (
               <div
                 key={conversation.id}
-                onClick={() => setSelectedChat(conversation.id)}
+                onClick={() => setSelectedChat(index)}
                 className="flex items-center gap-3 p-4 hover:bg-card/50 transition-colors cursor-pointer"
               >
                 <div className="relative">
