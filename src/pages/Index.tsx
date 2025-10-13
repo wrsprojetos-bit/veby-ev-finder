@@ -3,6 +3,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { LayoutGrid, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import vebyLogo from "@/assets/veby-logo.png";
 
 // Mock data
 const vehicles = [
@@ -50,23 +51,17 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-16">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-md">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-14">
-          <button className="text-sm px-3 py-1.5 border border-white/20 rounded-md">
-            LIVE
-          </button>
-          <div className="flex items-center gap-6 flex-1 justify-center">
-            <button className="text-sm text-white/70">Explorar</button>
-            <button className="text-sm text-white/70">A seguir</button>
-            <button className="text-base font-semibold text-white border-b-2 border-white pb-1">
-              Para Ti
-            </button>
+          <div className="flex items-center gap-2 flex-1 justify-center">
+            <img src={vebyLogo} alt="VEBY" className="w-8 h-8" />
+            <h1 className="text-xl font-semibold text-foreground tracking-wide">VEBY</h1>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setViewMode(viewMode === "feed" ? "list" : "feed")}
-            className="hover:bg-white/10"
+            className="hover:bg-white/10 absolute right-4"
           >
             {viewMode === "feed" ? (
               <List className="w-5 h-5" />
