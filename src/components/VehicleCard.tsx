@@ -135,23 +135,23 @@ export const VehicleCard = ({
         </div>
 
         {/* Right Side Actions - TikTok Style */}
-        <div className="absolute right-2 bottom-24 flex flex-col items-center gap-5 z-20">
+        <div className="absolute right-3 bottom-28 flex flex-col items-center gap-4 z-20">
           {/* Profile Avatar with Follow Button */}
           <div className="relative">
-            <Avatar className="w-12 h-12 border-2 border-white">
+            <Avatar className="w-11 h-11 border-2 border-white shadow-lg">
               <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=seller" />
               <AvatarFallback>VD</AvatarFallback>
             </Avatar>
-            <button onClick={handleFollow} className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-              <UserPlus className="w-4 h-4 text-primary-foreground" />
+            <button onClick={handleFollow} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
+              <UserPlus className="w-3 h-3 text-primary-foreground" />
             </button>
           </div>
 
           {/* Like Button */}
-          <button onClick={handleLike} className="flex flex-col items-center gap-1">
+          <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
             <Heart
               className={cn(
-                "w-8 h-8 transition-all",
+                "w-7 h-7 transition-all drop-shadow-lg",
                 isLiked ? "fill-primary text-primary" : "text-white"
               )}
             />
@@ -159,16 +159,16 @@ export const VehicleCard = ({
           </button>
 
           {/* Message Button */}
-          <button onClick={handleMessage} className="flex flex-col items-center gap-1">
-            <MessageCircle className="w-8 h-8 text-white fill-white" />
+          <button onClick={handleMessage} className="flex flex-col items-center gap-0.5">
+            <MessageCircle className="w-7 h-7 text-white drop-shadow-lg" />
             <span className="text-xs font-semibold text-white drop-shadow-lg">Chat</span>
           </button>
 
           {/* Bookmark Button */}
-          <button onClick={handleFavorite} className="flex flex-col items-center gap-1">
+          <button onClick={handleFavorite} className="flex flex-col items-center gap-0.5">
             <BookmarkPlus
               className={cn(
-                "w-8 h-8 transition-all",
+                "w-7 h-7 transition-all drop-shadow-lg",
                 isFavorited ? "fill-secondary text-secondary" : "text-white"
               )}
             />
@@ -176,9 +176,8 @@ export const VehicleCard = ({
           </button>
 
           {/* Share Button */}
-          <button className="flex flex-col items-center gap-1">
-            <Share2 className="w-8 h-8 text-white" />
-            <span className="text-xs font-semibold text-white drop-shadow-lg">148</span>
+          <button className="flex flex-col items-center gap-0.5">
+            <Share2 className="w-7 h-7 text-white drop-shadow-lg" />
           </button>
         </div>
 
@@ -202,13 +201,12 @@ export const VehicleCard = ({
             </div>
           </div>
 
-          {/* Botão de Negociação - Grande e Destacado */}
+          {/* Botão de Negociação */}
           <Button
             onClick={handleMessage}
-            size="lg"
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-base shadow-lg"
+            className="w-full h-11 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-semibold text-sm shadow-lg"
           >
-            <MessageCircle className="w-5 h-5 mr-2" />
+            <MessageCircle className="w-4 h-4 mr-2" />
             Negociar com o vendedor
           </Button>
         </div>
