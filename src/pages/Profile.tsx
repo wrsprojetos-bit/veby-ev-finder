@@ -17,8 +17,9 @@ const Profile = () => {
   const [userListings, setUserListings] = useState<any[]>([]);
 
   useEffect(() => {
+    // Redirect only if trying to access own profile without auth
     if (!loading && !user) {
-      navigate("/auth");
+      navigate("/");
     }
   }, [user, loading, navigate]);
 

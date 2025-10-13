@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import vebyLogo from "@/assets/veby-logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,6 +131,16 @@ const Index = () => {
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center justify-between px-4 h-14">
+          {!user && (
+            <Button 
+              onClick={() => navigate("/auth")}
+              size="sm"
+              className="bg-gradient-primary text-primary-foreground shadow-glow-primary absolute left-4 z-10"
+            >
+              <LogIn className="w-4 h-4 mr-1" />
+              Entrar
+            </Button>
+          )}
           <div className="flex items-center gap-2 flex-1 justify-center">
             <img src={vebyLogo} alt="VEBY" className="w-8 h-8" />
             <h1 className="text-xl font-semibold text-foreground tracking-wide">VEBY</h1>

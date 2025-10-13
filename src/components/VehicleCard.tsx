@@ -2,6 +2,8 @@ import { Heart, MessageCircle, Share2, BookmarkPlus, UserPlus, MapPin, Eye } fro
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuthRequired } from "@/hooks/useAuthRequired";
+import { toast } from "sonner";
 
 interface VehicleCardProps {
   id?: any;
@@ -34,6 +36,38 @@ export const VehicleCard = ({
   isFavorited = false,
   variant = "feed",
 }: VehicleCardProps) => {
+  const { requireAuth, LoginDialog } = useAuthRequired();
+
+  const handleLike = () => {
+    requireAuth(() => {
+      toast.success("Curtido!");
+    });
+  };
+
+  const handleComment = () => {
+    requireAuth(() => {
+      toast.info("Abrindo comentários...");
+    });
+  };
+
+  const handleFavorite = () => {
+    requireAuth(() => {
+      toast.success("Favoritado!");
+    });
+  };
+
+  const handleMessage = () => {
+    requireAuth(() => {
+      toast.info("Abrindo chat...");
+    });
+  };
+
+  const handleFollow = () => {
+    requireAuth(() => {
+      toast.success("Seguindo!");
+    });
+  };
+
   if (variant === "list") {
     return (
       <div className="flex gap-3 p-3 bg-card rounded-xl border border-border hover:border-primary/50 transition-all">
@@ -70,85 +104,88 @@ export const VehicleCard = ({
   }
 
   return (
-    <div className="relative w-full h-screen snap-start">
-      {/* Background Image - Full Screen */}
-      <div className="absolute inset-0 overflow-hidden">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
-      </div>
+    <>
+      <LoginDialog />
+      <div className="relative w-full h-screen snap-start">
+        {/* Background Image - Full Screen */}
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
+        </div>
 
-      {/* Right Side Actions - TikTok Style */}
-      <div className="absolute right-2 bottom-24 flex flex-col items-center gap-5 z-20">
-        {/* Profile Avatar with Follow Button */}
-        <div className="relative">
-          <Avatar className="w-12 h-12 border-2 border-white">
-            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=seller" />
-            <AvatarFallback>VD</AvatarFallback>
-          </Avatar>
-          <button className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-            <UserPlus className="w-4 h-4 text-primary-foreground" />
+        {/* Right Side Actions - TikTok Style */}
+        <div className="absolute right-2 bottom-24 flex flex-col items-center gap-5 z-20">
+          {/* Profile Avatar with Follow Button */}
+          <div className="relative">
+            <Avatar className="w-12 h-12 border-2 border-white">
+              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=seller" />
+              <AvatarFallback>VD</AvatarFallback>
+            </Avatar>
+            <button onClick={handleFollow} className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+              <UserPlus className="w-4 h-4 text-primary-foreground" />
+            </button>
+          </div>
+
+          {/* Like Button */}
+          <button onClick={handleLike} className="flex flex-col items-center gap-1">
+            <Heart
+              className={cn(
+                "w-8 h-8 transition-all",
+                isLiked ? "fill-primary text-primary" : "text-white"
+              )}
+            />
+            <span className="text-xs font-semibold text-white drop-shadow-lg">{likes}</span>
+          </button>
+
+          {/* Comment Button */}
+          <button onClick={handleComment} className="flex flex-col items-center gap-1">
+            <MessageCircle className="w-8 h-8 text-white" />
+            <span className="text-xs font-semibold text-white drop-shadow-lg">50</span>
+          </button>
+
+          {/* Bookmark Button */}
+          <button onClick={handleFavorite} className="flex flex-col items-center gap-1">
+            <BookmarkPlus
+              className={cn(
+                "w-8 h-8 transition-all",
+                isFavorited ? "fill-secondary text-secondary" : "text-white"
+              )}
+            />
+            <span className="text-xs font-semibold text-white drop-shadow-lg">182</span>
+          </button>
+
+          {/* Share Button */}
+          <button className="flex flex-col items-center gap-1">
+            <Share2 className="w-8 h-8 text-white" />
+            <span className="text-xs font-semibold text-white drop-shadow-lg">148</span>
           </button>
         </div>
 
-        {/* Like Button */}
-        <button className="flex flex-col items-center gap-1">
-          <Heart
-            className={cn(
-              "w-8 h-8 transition-all",
-              isLiked ? "fill-primary text-primary" : "text-white"
-            )}
-          />
-          <span className="text-xs font-semibold text-white drop-shadow-lg">{likes}</span>
-        </button>
-
-        {/* Comment Button */}
-        <button className="flex flex-col items-center gap-1">
-          <MessageCircle className="w-8 h-8 text-white" />
-          <span className="text-xs font-semibold text-white drop-shadow-lg">50</span>
-        </button>
-
-        {/* Bookmark Button */}
-        <button className="flex flex-col items-center gap-1">
-          <BookmarkPlus
-            className={cn(
-              "w-8 h-8 transition-all",
-              isFavorited ? "fill-secondary text-secondary" : "text-white"
-            )}
-          />
-          <span className="text-xs font-semibold text-white drop-shadow-lg">182</span>
-        </button>
-
-        {/* Share Button */}
-        <button className="flex flex-col items-center gap-1">
-          <Share2 className="w-8 h-8 text-white" />
-          <span className="text-xs font-semibold text-white drop-shadow-lg">148</span>
-        </button>
-      </div>
-
-      {/* Bottom Info Overlay - TikTok Style */}
-      <div className="absolute inset-x-0 bottom-20 px-4 pb-4 space-y-3 z-10">
-        {/* User Info */}
-        <div className="flex items-center gap-2">
-          <h3 className="text-white font-semibold text-base">@{title.toLowerCase().replace(/\s+/g, '_')}</h3>
-        </div>
-        
-        {/* Description */}
-        <div className="space-y-1">
-          <p className="text-white text-sm">
-            {price} • {location} • {distance}
-          </p>
+        {/* Bottom Info Overlay - TikTok Style */}
+        <div className="absolute inset-x-0 bottom-20 px-4 pb-4 space-y-3 z-10">
+          {/* User Info */}
           <div className="flex items-center gap-2">
-            <span className="text-primary text-xs">#{category}</span>
-            {acceptsTrade && (
-              <span className="text-secondary text-xs">#aceitatroca</span>
-            )}
+            <h3 className="text-white font-semibold text-base">@{title.toLowerCase().replace(/\s+/g, '_')}</h3>
+          </div>
+          
+          {/* Description */}
+          <div className="space-y-1">
+            <p className="text-white text-sm">
+              {price} • {location} • {distance}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-primary text-xs">#{category}</span>
+              {acceptsTrade && (
+                <span className="text-secondary text-xs">#aceitatroca</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };

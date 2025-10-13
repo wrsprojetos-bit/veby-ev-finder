@@ -1,8 +1,12 @@
+import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { Button } from "@/components/ui/button";
-import { Filter, Search } from "lucide-react";
+import { Filter, Search, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const categories = [
   "Todos",
@@ -14,45 +18,35 @@ const categories = [
   "Peças",
 ];
 
-const vehicles = [
-  {
-    id: 1,
-    title: "Bike Elétrica SuperCharge Pro",
-    price: "R$ 4.500",
-    location: "São Paulo, SP",
-    distance: "2.3 km",
-    views: 1234,
-    likes: 89,
-    image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800&q=80",
-    category: "Bike Elétrica",
-    acceptsTrade: true,
-  },
-  {
-    id: 2,
-    title: "Patinete Xiaomi Mi Pro 2",
-    price: "R$ 2.800",
-    location: "Rio de Janeiro, RJ",
-    distance: "5.1 km",
-    views: 856,
-    likes: 45,
-    image: "https://images.unsplash.com/photo-1621544402532-7a86ed81d07a?w=800&q=80",
-    category: "Patinete",
-  },
-  {
-    id: 3,
-    title: "Scooter Elétrica Voltz EV1",
-    price: "R$ 8.900",
-    location: "Curitiba, PR",
-    distance: "1.8 km",
-    views: 2341,
-    likes: 156,
-    image: "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80",
-    category: "Scooter",
-    acceptsTrade: true,
-  },
-];
-
 const Explore = () => {
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    const { data } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("status", "ativo")
+      .order("created_at", { ascending: false });
+    
+    if (data) setListings(data);
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-16">
       <header className="fixed top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
@@ -65,6 +59,16 @@ const Explore = () => {
                 className="pl-10 bg-input border-border"
               />
             </div>
+            {!user && (
+              <Button 
+                onClick={() => navigate("/auth")}
+                size="sm"
+                className="bg-gradient-primary text-primary-foreground shadow-glow-primary"
+              >
+                <LogIn className="w-4 h-4 mr-1" />
+                Entrar
+              </Button>
+            )}
             <Button size="icon" variant="outline" className="border-border">
               <Filter className="w-4 h-4" />
             </Button>
@@ -86,9 +90,28 @@ const Explore = () => {
       </header>
 
       <main className="pt-32 px-4 space-y-3">
-        {vehicles.map((vehicle) => (
-          <VehicleCard key={vehicle.id} {...vehicle} variant="list" />
-        ))}
+        {listings.length > 0 ? (
+          listings.map((listing) => (
+            <VehicleCard 
+              key={listing.id} 
+              id={listing.id}
+              title={listing.brand_model}
+              price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+              location={listing.location}
+              distance="2.3 km"
+              views={listing.views}
+              likes={listing.likes}
+              image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+              category={listing.category}
+              acceptsTrade={listing.accepts_trade}
+              variant="list" 
+            />
+          ))
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            <p>Nenhum anúncio disponível</p>
+          </div>
+        )}
       </main>
 
       <BottomNav />
