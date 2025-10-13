@@ -50,16 +50,23 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background pb-16">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border">
-        <div className="flex items-center justify-between px-4 h-16">
-          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            VEBY
-          </h1>
+      <header className="fixed top-0 left-0 right-0 z-40 bg-black/40 backdrop-blur-md">
+        <div className="flex items-center justify-between px-4 h-14">
+          <button className="text-sm px-3 py-1.5 border border-white/20 rounded-md">
+            LIVE
+          </button>
+          <div className="flex items-center gap-6 flex-1 justify-center">
+            <button className="text-sm text-white/70">Explorar</button>
+            <button className="text-sm text-white/70">A seguir</button>
+            <button className="text-base font-semibold text-white border-b-2 border-white pb-1">
+              Para Ti
+            </button>
+          </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setViewMode(viewMode === "feed" ? "list" : "feed")}
-            className="hover:bg-primary/10"
+            className="hover:bg-white/10"
           >
             {viewMode === "feed" ? (
               <List className="w-5 h-5" />
@@ -71,15 +78,15 @@ const Index = () => {
       </header>
 
       {/* Content */}
-      <main className="pt-16">
+      <main className="pt-0">
         {viewMode === "feed" ? (
-          <div className="snap-y snap-mandatory overflow-y-scroll h-[calc(100vh-8rem)]">
+          <div className="snap-y snap-mandatory overflow-y-scroll h-screen">
             {vehicles.map((vehicle) => (
               <VehicleCard key={vehicle.id} {...vehicle} variant="feed" />
             ))}
           </div>
         ) : (
-          <div className="space-y-3 p-4">
+          <div className="space-y-3 p-4 pt-20">
             {vehicles.map((vehicle) => (
               <VehicleCard key={vehicle.id} {...vehicle} variant="list" />
             ))}
