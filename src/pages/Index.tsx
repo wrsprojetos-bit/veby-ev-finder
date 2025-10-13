@@ -177,7 +177,9 @@ const Index = () => {
                 image={listing.video_url || listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                 category={listing.category}
                 acceptsTrade={listing.accepts_trade}
-                variant="feed" 
+                variant="feed"
+                sellerId={listing.user_id}
+                listingId={listing.id}
               />
             ))}
           </div>
@@ -196,7 +198,9 @@ const Index = () => {
                 image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                 category={listing.category}
                 acceptsTrade={listing.accepts_trade}
-                variant="list" 
+                variant="list"
+                sellerId={listing.user_id}
+                listingId={listing.id}
               />
             ))}
           </div>

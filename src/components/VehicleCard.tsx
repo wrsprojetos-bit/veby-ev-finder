@@ -19,6 +19,8 @@ interface VehicleCardProps {
   isLiked?: boolean;
   isFavorited?: boolean;
   variant?: "feed" | "list";
+  sellerId?: string;
+  listingId?: string;
 }
 
 export const VehicleCard = ({
@@ -35,6 +37,8 @@ export const VehicleCard = ({
   isLiked = false,
   isFavorited = false,
   variant = "feed",
+  sellerId,
+  listingId,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
 
@@ -56,9 +60,20 @@ export const VehicleCard = ({
     });
   };
 
-  const handleMessage = () => {
-    requireAuth(() => {
-      window.location.href = "/chat";
+  const handleMessage = async () => {
+    if (!sellerId || !listingId) {
+      toast.error("Informações do anúncio não disponíveis");
+      return;
+    }
+    
+    requireAuth(async () => {
+      const { useChat } = await import("@/hooks/useChat");
+      const { findOrCreateChat } = useChat();
+      const chatId = await findOrCreateChat(listingId, sellerId);
+      
+      if (chatId) {
+        window.location.href = `/chat?chatId=${chatId}`;
+      }
     });
   };
 
@@ -173,7 +188,7 @@ export const VehicleCard = ({
           </div>
           
           {/* Description */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             <p className="text-white text-sm">
               {price} • {location} • {distance}
             </p>
@@ -184,6 +199,16 @@ export const VehicleCard = ({
               )}
             </div>
           </div>
+
+          {/* Botão de Negociação - Grande e Destacado */}
+          <Button
+            onClick={handleMessage}
+            size="lg"
+            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground font-bold text-base shadow-lg"
+          >
+            <MessageCircle className="w-5 h-5 mr-2" />
+            Negociar com o vendedor
+          </Button>
         </div>
       </div>
     </>
