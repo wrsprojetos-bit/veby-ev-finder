@@ -58,7 +58,7 @@ export const VehicleCard = ({
 
   const handleMessage = () => {
     requireAuth(() => {
-      toast.info("Abrindo chat...");
+      window.location.href = "/chat";
     });
   };
 
