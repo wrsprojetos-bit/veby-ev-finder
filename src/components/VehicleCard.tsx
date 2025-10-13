@@ -141,10 +141,10 @@ export const VehicleCard = ({
             <span className="text-xs font-semibold text-white drop-shadow-lg">{likes}</span>
           </button>
 
-          {/* Comment Button */}
-          <button onClick={handleComment} className="flex flex-col items-center gap-1">
-            <MessageCircle className="w-8 h-8 text-white" />
-            <span className="text-xs font-semibold text-white drop-shadow-lg">50</span>
+          {/* Message Button */}
+          <button onClick={handleMessage} className="flex flex-col items-center gap-1">
+            <MessageCircle className="w-8 h-8 text-white fill-white" />
+            <span className="text-xs font-semibold text-white drop-shadow-lg">Chat</span>
           </button>
 
           {/* Bookmark Button */}
