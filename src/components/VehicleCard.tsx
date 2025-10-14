@@ -5,9 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthRequired } from "@/hooks/useAuthRequired";
 import { toast } from "sonner";
 import { useChat } from "@/hooks/useChat";
+import { useLikesAndFavorites } from "@/hooks/useLikesAndFavorites";
 import { useNavigate } from "react-router-dom";
-import { useLikes } from "@/hooks/useLikes";
-import { useFavorites } from "@/hooks/useFavorites";
 
 interface VehicleCardProps {
   id?: any;
@@ -45,8 +44,7 @@ export const VehicleCard = ({
   const { requireAuth, LoginDialog } = useAuthRequired();
   const { findOrCreateChat } = useChat();
   const navigate = useNavigate();
-  const { isLiked, likesCount, toggleLike } = useLikes(listingId);
-  const { isFavorited, toggleFavorite } = useFavorites(listingId);
+  const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -150,12 +148,18 @@ export const VehicleCard = ({
         <div className="absolute right-3 bottom-40 flex flex-col items-center gap-4 z-20">
           {/* Profile Avatar - Click to view seller profile */}
           <button 
-            onClick={() => sellerId && navigate(`/profile?userId=${sellerId}`)} 
+            onClick={() => {
+              if (sellerId) {
+                navigate(`/profile?userId=${sellerId}`);
+              } else {
+                toast.error("Informações do vendedor não disponíveis");
+              }
+            }} 
             className="relative"
           >
             <Avatar className="w-11 h-11 border-2 border-white shadow-lg">
               <AvatarImage src={sellerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sellerId}`} />
-              <AvatarFallback>{sellerName.substring(0, 2).toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{sellerName?.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
           </button>
 
