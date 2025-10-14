@@ -198,17 +198,17 @@ export const VehicleCard = ({
         </div>
 
         {/* Bottom Info Overlay - TikTok Style */}
-        <div className="absolute inset-x-0 bottom-20 px-4 pb-4 z-10">
+        <div className="absolute inset-x-0 bottom-20 z-10">
           {/* Faixa Preta Semi-Transparente */}
           <div 
             className={cn(
-              "bg-black/50 p-4 transition-all duration-300",
-              isExpanded ? "max-h-[60vh] overflow-y-auto" : "max-h-32"
+              "bg-black/50 px-4 py-3 transition-all duration-300",
+              isExpanded ? "max-h-[60vh] overflow-y-auto" : "max-h-auto"
             )}
           >
             {/* User Info com Botão Negociar */}
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-white font-bold text-sm">@{sellerName.toLowerCase().replace(/\s+/g, '_')}</h3>
+              <h3 className="text-white font-bold text-sm drop-shadow-lg">@{sellerName.toLowerCase().replace(/\s+/g, '_')}</h3>
               <Button
                 onClick={handleMessage}
                 className="h-7 px-4 bg-transparent hover:bg-white/10 text-white font-semibold text-xs border border-white/80 rounded-full"
@@ -218,12 +218,12 @@ export const VehicleCard = ({
             </div>
             
             {/* Título do Produto */}
-            <p className="text-white text-base font-bold mb-1">
+            <p className="text-white text-base font-bold mb-1 drop-shadow-lg">
               {title}
             </p>
             
             {/* Preço, Localização e Distância com Ver Mais */}
-            <div className="flex items-center gap-1 text-white/90 text-sm">
+            <div className="flex items-center gap-1 text-white/90 text-sm drop-shadow-lg">
               <span>{price}</span>
               <span>•</span>
               <span>{location}</span>
