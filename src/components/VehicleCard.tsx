@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, BookmarkPlus, UserPlus, MapPin, Eye } from "lucide-react";
+import { Heart, MessageCircle, Share2, BookmarkPlus, MapPin, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -79,10 +79,24 @@ export const VehicleCard = ({
     });
   };
 
-  const handleFollow = () => {
-    requireAuth(() => {
-      toast.success("Seguindo!");
-    });
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/?listing=${listingId}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: title,
+          text: `Confira este anúncio: ${title} - ${price}`,
+          url: shareUrl,
+        });
+      } catch (err) {
+        // User cancelled share
+      }
+    } else {
+      // Fallback: copy to clipboard
+      navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copiado para a área de transferência!");
+    }
   };
 
   if (variant === "list") {
@@ -135,24 +149,21 @@ export const VehicleCard = ({
         </div>
 
         {/* Right Side Actions - TikTok Style */}
-        <div className="absolute right-3 bottom-28 flex flex-col items-center gap-4 z-20">
-          {/* Profile Avatar with Follow Button */}
-          <div className="relative">
+        <div className="absolute right-3 bottom-40 flex flex-col items-center gap-4 z-20">
+          {/* Profile Avatar - Click to view seller profile */}
+          <button onClick={() => navigate(`/profile?userId=${sellerId}`)} className="relative">
             <Avatar className="w-11 h-11 border-2 border-white shadow-lg">
               <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=seller" />
               <AvatarFallback>VD</AvatarFallback>
             </Avatar>
-            <button onClick={handleFollow} className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-md">
-              <UserPlus className="w-3 h-3 text-primary-foreground" />
-            </button>
-          </div>
+          </button>
 
           {/* Like Button */}
           <button onClick={handleLike} className="flex flex-col items-center gap-0.5">
             <Heart
               className={cn(
                 "w-7 h-7 transition-all drop-shadow-lg",
-                isLiked ? "fill-primary text-primary" : "text-white"
+                isLiked ? "fill-red-500 text-red-500" : "text-white"
               )}
             />
             <span className="text-xs font-semibold text-white drop-shadow-lg">{likes}</span>
@@ -168,14 +179,14 @@ export const VehicleCard = ({
             <BookmarkPlus
               className={cn(
                 "w-7 h-7 transition-all drop-shadow-lg",
-                isFavorited ? "fill-secondary text-secondary" : "text-white"
+                isFavorited ? "fill-yellow-400 text-yellow-400" : "text-white"
               )}
             />
             <span className="text-xs font-semibold text-white drop-shadow-lg">182</span>
           </button>
 
           {/* Share Button */}
-          <button className="flex flex-col items-center gap-0.5">
+          <button onClick={handleShare} className="flex flex-col items-center gap-0.5">
             <Share2 className="w-7 h-7 text-white drop-shadow-lg" />
           </button>
         </div>
