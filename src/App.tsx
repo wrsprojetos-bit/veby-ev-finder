@@ -10,6 +10,7 @@ import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AdminIndex from "./pages/admin/Index";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/chat" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/admin/*" element={<AdminIndex />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
