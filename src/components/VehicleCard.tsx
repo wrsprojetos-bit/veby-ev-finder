@@ -135,13 +135,12 @@ export const VehicleCard = ({
       <LoginDialog />
       <div className="relative w-full h-screen snap-start">
         {/* Background Image - Full Screen */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden bg-[#0D0D0D]">
           <img
             src={image}
             alt={title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60" />
         </div>
 
         {/* Right Side Actions - TikTok Style */}
@@ -197,33 +196,41 @@ export const VehicleCard = ({
         </div>
 
         {/* Bottom Info Overlay - TikTok Style */}
-        <div className="absolute inset-x-0 bottom-20 px-4 pb-4 space-y-3 z-10">
-          {/* User Info */}
-          <div className="flex items-center gap-2">
-            <h3 className="text-white font-semibold text-base">@{title.toLowerCase().replace(/\s+/g, '_')}</h3>
-          </div>
-          
-          {/* Description */}
-          <div className="space-y-2">
-            <p className="text-white text-sm">
-              {price} • {location} • {distance}
-            </p>
+        <div className="absolute inset-x-0 bottom-20 px-4 pb-6 z-10">
+          {/* Faixa Semi-Transparente com Info */}
+          <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+            {/* User Info */}
             <div className="flex items-center gap-2">
-              <span className="text-primary text-xs">#{category}</span>
-              {acceptsTrade && (
-                <span className="text-secondary text-xs">#aceitatroca</span>
-              )}
+              <h3 className="text-white font-bold text-base drop-shadow-lg">@{sellerName.toLowerCase().replace(/\s+/g, '_')}</h3>
             </div>
-          </div>
+            
+            {/* Description */}
+            <div className="space-y-2">
+              <p className="text-white text-sm font-medium drop-shadow-md">
+                {title}
+              </p>
+              <p className="text-white/90 text-sm">
+                {price} • {location} • {distance}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-primary text-xs font-semibold">#{category}</span>
+                {acceptsTrade && (
+                  <span className="bg-[#FF2C2C] text-white text-xs font-bold px-3 py-1 rounded-md">
+                    Aceita Troca
+                  </span>
+                )}
+              </div>
+            </div>
 
-          {/* Botão de Negociação */}
-          <Button
-            onClick={handleMessage}
-            className="w-full h-11 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-semibold text-sm shadow-lg"
-          >
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Negociar com o vendedor
-          </Button>
+            {/* Botão de Negociação */}
+            <Button
+              onClick={handleMessage}
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-black font-bold text-sm shadow-lg"
+            >
+              <MessageCircle className="w-4 h-4 mr-2" />
+              Negociar com o vendedor
+            </Button>
+          </div>
         </div>
       </div>
     </>
