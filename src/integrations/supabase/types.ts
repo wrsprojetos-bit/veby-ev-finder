@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -398,6 +428,45 @@ export type Database = {
         }
         Relationships: []
       }
+      push_notifications: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          filters: Json | null
+          id: string
+          message: string
+          scheduled_at: string | null
+          sent_at: string | null
+          status: string | null
+          target_audience: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          filters?: Json | null
+          id?: string
+          message: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_audience?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          filters?: Json | null
+          id?: string
+          message?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          target_audience?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       ratings: {
         Row: {
           created_at: string | null
@@ -480,15 +549,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       account_type: "pessoa_fisica" | "empresa"
+      app_role: "super_admin" | "moderador" | "suporte" | "financeiro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -617,6 +721,7 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["pessoa_fisica", "empresa"],
+      app_role: ["super_admin", "moderador", "suporte", "financeiro"],
     },
   },
 } as const
