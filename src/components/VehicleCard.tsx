@@ -198,7 +198,7 @@ export const VehicleCard = ({
         </div>
 
         {/* Bottom Info Overlay - TikTok Style */}
-        <div className="absolute inset-x-0 bottom-20 z-10">
+        <div className="absolute inset-x-0 bottom-24 z-10">
           {/* Faixa Preta Semi-Transparente */}
           <div 
             className={cn(
