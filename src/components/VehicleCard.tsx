@@ -195,22 +195,20 @@ export const VehicleCard = ({
           </button>
         </div>
 
-        {/* Botão de Negociação - Centralizado */}
-        <div className="absolute inset-x-0 bottom-32 px-6 z-20 flex justify-center">
-          <Button
-            onClick={handleMessage}
-            className="h-12 px-8 bg-[#00FFB2] hover:bg-[#00FFB2]/90 text-black font-bold text-base shadow-2xl rounded-full"
-          >
-            Negociar 💬
-          </Button>
-        </div>
-
         {/* Bottom Info Overlay - TikTok Style */}
         <div className="absolute inset-x-0 bottom-20 px-4 pb-4 z-10">
           {/* Faixa Semi-Transparente Simples */}
           <div className="bg-black/50 p-3 space-y-1">
-            {/* User Info */}
-            <h3 className="text-white font-bold text-sm">@{sellerName.toLowerCase().replace(/\s+/g, '_')}</h3>
+            {/* User Info com Botão Negociar Inline */}
+            <div className="flex items-center gap-2">
+              <h3 className="text-white font-bold text-sm">@{sellerName.toLowerCase().replace(/\s+/g, '_')}</h3>
+              <Button
+                onClick={handleMessage}
+                className="h-7 px-4 bg-transparent hover:bg-white/10 text-white font-semibold text-xs border border-white/80 rounded-full"
+              >
+                Negociar
+              </Button>
+            </div>
             
             {/* Description */}
             <p className="text-white text-base font-bold">
