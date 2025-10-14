@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useChat } from "@/hooks/useChat";
 import { useLikesAndFavorites } from "@/hooks/useLikesAndFavorites";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 interface VehicleCardProps {
   id?: any;
@@ -45,6 +46,7 @@ export const VehicleCard = ({
   const { findOrCreateChat } = useChat();
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -197,10 +199,15 @@ export const VehicleCard = ({
 
         {/* Bottom Info Overlay - TikTok Style */}
         <div className="absolute inset-x-0 bottom-20 px-4 pb-4 z-10">
-          {/* Faixa Semi-Transparente Simples */}
-          <div className="bg-black/50 p-3 space-y-1">
-            {/* User Info com Botão Negociar Inline */}
-            <div className="flex items-center gap-2">
+          {/* Faixa Preta Semi-Transparente */}
+          <div 
+            className={cn(
+              "bg-black/50 p-4 transition-all duration-300",
+              isExpanded ? "max-h-[60vh] overflow-y-auto" : "max-h-32"
+            )}
+          >
+            {/* User Info com Botão Negociar */}
+            <div className="flex items-center gap-2 mb-2">
               <h3 className="text-white font-bold text-sm">@{sellerName.toLowerCase().replace(/\s+/g, '_')}</h3>
               <Button
                 onClick={handleMessage}
@@ -210,21 +217,57 @@ export const VehicleCard = ({
               </Button>
             </div>
             
-            {/* Description */}
-            <p className="text-white text-base font-bold">
+            {/* Título do Produto */}
+            <p className="text-white text-base font-bold mb-1">
               {title}
             </p>
-            <p className="text-white/90 text-sm">
-              {price} • {location} • {distance}
-            </p>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="text-[#00FFB2] text-xs font-semibold">#{category}</span>
-              {acceptsTrade && (
-                <span className="bg-[#FF2C2C] text-white text-xs font-bold px-2 py-0.5 rounded">
-                  Aceita Troca
-                </span>
-              )}
+            
+            {/* Preço, Localização e Distância com Ver Mais */}
+            <div className="flex items-center gap-1 text-white/90 text-sm">
+              <span>{price}</span>
+              <span>•</span>
+              <span>{location}</span>
+              <span>•</span>
+              <span>{distance}</span>
+              <button 
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="ml-2 text-white/70 hover:text-white font-semibold"
+              >
+                ...ver mais
+              </button>
             </div>
+            
+            {/* Conteúdo Expandido */}
+            {isExpanded && (
+              <div className="mt-4 space-y-3 text-white">
+                <div>
+                  <h4 className="font-bold mb-1">Descrição</h4>
+                  <p className="text-sm text-white/90">
+                    {title} em ótimo estado de conservação.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-bold mb-1">Informações</h4>
+                  <div className="text-sm text-white/90 space-y-1">
+                    <p>💰 Preço: {price}</p>
+                    <p>📍 Localização: {location}</p>
+                    <p>📏 Distância: {distance}</p>
+                    <p>👁️ Visualizações: {views}</p>
+                    {acceptsTrade && <p>🔄 Aceita Troca</p>}
+                  </div>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[#00FFB2] text-xs font-semibold">#{category}</span>
+                  {acceptsTrade && (
+                    <span className="bg-[#FF2C2C] text-white text-xs font-bold px-2 py-0.5 rounded">
+                      Aceita Troca
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
