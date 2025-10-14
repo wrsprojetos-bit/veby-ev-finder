@@ -22,14 +22,28 @@ const Auth = () => {
 
   useEffect(() => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         const userName = session.user.user_metadata?.name || session.user.email?.split('@')[0];
+        
+        // Check if user is admin
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+        
         toast({
           title: `Bem-vindo ao VEBY, ${userName}! 🚀`,
           description: "Você já está logado.",
         });
-        navigate("/");
+        
+        // Redirect to admin panel if super admin
+        if (roleData?.role === "super_admin") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
       }
     });
   }, [navigate, toast]);
@@ -84,11 +98,25 @@ const Auth = () => {
       if (error) throw error;
 
       const userName = data.user?.user_metadata?.name || data.user?.email?.split('@')[0];
+      
+      // Check if user is admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", data.user.id)
+        .single();
+      
       toast({
         title: `Bem-vindo ao VEBY, ${userName}! 🚀`,
         description: "Login realizado com sucesso.",
       });
-      navigate("/");
+      
+      // Redirect to admin panel if super admin
+      if (roleData?.role === "super_admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
