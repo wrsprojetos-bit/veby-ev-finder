@@ -32,9 +32,15 @@ export const useAdminRole = () => {
           setIsSuperAdmin(false);
           setRole(null);
         } else if (data) {
+          console.log("User role found:", data.role, "User ID:", user.id);
           setRole(data.role);
           setIsAdmin(true);
           setIsSuperAdmin(data.role === "super_admin");
+        } else {
+          console.log("No role found for user:", user.id);
+          setIsAdmin(false);
+          setIsSuperAdmin(false);
+          setRole(null);
         }
       } catch (error) {
         console.error("Error in checkAdminRole:", error);
