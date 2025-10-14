@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       chats: {
         Row: {
           created_at: string | null
@@ -307,34 +328,73 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"]
+          anuncios_ativos: number | null
+          bio: string | null
+          cnpj: string | null
           created_at: string | null
+          empresa_verificada: boolean | null
+          endereco: string | null
+          horario_funcionamento: string | null
           id: string
+          instagram_url: string | null
           location: string | null
+          logo_url: string | null
           name: string
           photo_url: string | null
           rating: number | null
+          site_url: string | null
+          tempo_medio_resposta: number | null
           total_tratos: number | null
+          total_vendas: number | null
           verified: boolean | null
+          whatsapp: string | null
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"]
+          anuncios_ativos?: number | null
+          bio?: string | null
+          cnpj?: string | null
           created_at?: string | null
+          empresa_verificada?: boolean | null
+          endereco?: string | null
+          horario_funcionamento?: string | null
           id: string
+          instagram_url?: string | null
           location?: string | null
+          logo_url?: string | null
           name: string
           photo_url?: string | null
           rating?: number | null
+          site_url?: string | null
+          tempo_medio_resposta?: number | null
           total_tratos?: number | null
+          total_vendas?: number | null
           verified?: boolean | null
+          whatsapp?: string | null
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"]
+          anuncios_ativos?: number | null
+          bio?: string | null
+          cnpj?: string | null
           created_at?: string | null
+          empresa_verificada?: boolean | null
+          endereco?: string | null
+          horario_funcionamento?: string | null
           id?: string
+          instagram_url?: string | null
           location?: string | null
+          logo_url?: string | null
           name?: string
           photo_url?: string | null
           rating?: number | null
+          site_url?: string | null
+          tempo_medio_resposta?: number | null
           total_tratos?: number | null
+          total_vendas?: number | null
           verified?: boolean | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -390,6 +450,36 @@ export type Database = {
           },
         ]
       }
+      reports: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason: string
+          reported_user_id: string
+          reporter_id: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          reason?: string
+          reported_user_id?: string
+          reporter_id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -398,7 +488,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      account_type: "pessoa_fisica" | "empresa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -525,6 +615,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: ["pessoa_fisica", "empresa"],
+    },
   },
 } as const
