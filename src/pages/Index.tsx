@@ -173,13 +173,14 @@ const Index = () => {
                 location={listing.profiles?.location || listing.location}
                 distance="2.5 km"
                 views={listing.views}
-                likes={listing.likes}
                 image={listing.video_url || listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                 category={listing.category}
                 acceptsTrade={listing.accepts_trade}
                 variant="feed"
                 sellerId={listing.user_id}
                 listingId={listing.id}
+                sellerName={listing.profiles?.name}
+                sellerAvatar={listing.profiles?.photo_url}
               />
             ))}
           </div>
@@ -194,13 +195,14 @@ const Index = () => {
                 location={listing.profiles?.location || listing.location}
                 distance="2.5 km"
                 views={listing.views}
-                likes={listing.likes}
                 image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                 category={listing.category}
                 acceptsTrade={listing.accepts_trade}
                 variant="list"
                 sellerId={listing.user_id}
                 listingId={listing.id}
+                sellerName={listing.profiles?.name}
+                sellerAvatar={listing.profiles?.photo_url}
               />
             ))}
           </div>

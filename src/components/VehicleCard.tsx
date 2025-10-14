@@ -6,6 +6,8 @@ import { useAuthRequired } from "@/hooks/useAuthRequired";
 import { toast } from "sonner";
 import { useChat } from "@/hooks/useChat";
 import { useNavigate } from "react-router-dom";
+import { useLikes } from "@/hooks/useLikes";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface VehicleCardProps {
   id?: any;
@@ -14,15 +16,14 @@ interface VehicleCardProps {
   location: string;
   distance: string;
   views: number;
-  likes: number;
   image: string;
   category: string;
   acceptsTrade?: boolean;
-  isLiked?: boolean;
-  isFavorited?: boolean;
   variant?: "feed" | "list";
   sellerId?: string;
   listingId?: string;
+  sellerName?: string;
+  sellerAvatar?: string;
 }
 
 export const VehicleCard = ({
@@ -32,23 +33,24 @@ export const VehicleCard = ({
   location,
   distance,
   views,
-  likes,
   image,
   category,
   acceptsTrade = false,
-  isLiked = false,
-  isFavorited = false,
   variant = "feed",
   sellerId,
-  listingId,
+  listingId = "",
+  sellerName = "Vendedor",
+  sellerAvatar,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
   const { findOrCreateChat } = useChat();
   const navigate = useNavigate();
+  const { isLiked, likesCount, toggleLike } = useLikes(listingId);
+  const { isFavorited, toggleFavorite } = useFavorites(listingId);
 
   const handleLike = () => {
     requireAuth(() => {
-      toast.success("Curtido!");
+      toggleLike();
     });
   };
 
@@ -60,7 +62,7 @@ export const VehicleCard = ({
 
   const handleFavorite = () => {
     requireAuth(() => {
-      toast.success("Favoritado!");
+      toggleFavorite();
     });
   };
 
@@ -124,10 +126,6 @@ export const VehicleCard = ({
               <Eye className="w-3 h-3" />
               {views}
             </span>
-            <span className="flex items-center gap-1">
-              <Heart className="w-3 h-3" />
-              {likes}
-            </span>
           </div>
         </div>
       </div>
@@ -151,10 +149,13 @@ export const VehicleCard = ({
         {/* Right Side Actions - TikTok Style */}
         <div className="absolute right-3 bottom-40 flex flex-col items-center gap-4 z-20">
           {/* Profile Avatar - Click to view seller profile */}
-          <button onClick={() => navigate(`/profile?userId=${sellerId}`)} className="relative">
+          <button 
+            onClick={() => sellerId && navigate(`/profile?userId=${sellerId}`)} 
+            className="relative"
+          >
             <Avatar className="w-11 h-11 border-2 border-white shadow-lg">
-              <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=seller" />
-              <AvatarFallback>VD</AvatarFallback>
+              <AvatarImage src={sellerAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${sellerId}`} />
+              <AvatarFallback>{sellerName.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
           </button>
 
@@ -166,7 +167,7 @@ export const VehicleCard = ({
                 isLiked ? "fill-red-500 text-red-500" : "text-white"
               )}
             />
-            <span className="text-xs font-semibold text-white drop-shadow-lg">{likes}</span>
+            <span className="text-xs font-semibold text-white drop-shadow-lg">{likesCount}</span>
           </button>
 
           {/* Comment Button */}

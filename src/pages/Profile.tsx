@@ -13,6 +13,140 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+const LikedListings = () => {
+  const { user } = useAuth();
+  const [likedListings, setLikedListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchLikedListings = async () => {
+      const { data } = await supabase
+        .from("likes")
+        .select(`
+          listing_id,
+          listings (
+            *,
+            profiles:user_id (
+              name,
+              photo_url
+            )
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        const listings = data.map((item: any) => item.listings).filter(Boolean);
+        setLikedListings(listings);
+      }
+      setLoading(false);
+    };
+
+    fetchLikedListings();
+  }, [user]);
+
+  if (loading) {
+    return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+  }
+
+  if (likedListings.length === 0) {
+    return <div className="text-center py-12 text-muted-foreground">Nenhum anúncio curtido</div>;
+  }
+
+  return (
+    <>
+      {likedListings.map((listing) => (
+        <VehicleCard 
+          key={listing.id}
+          id={listing.id}
+          title={listing.brand_model}
+          price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+          location={listing.location}
+          distance="--"
+          views={listing.views}
+          image={listing.thumbnail_url || listing.images?.[0] || ""}
+          category={listing.category}
+          acceptsTrade={listing.accepts_trade}
+          variant="list"
+          sellerId={listing.user_id}
+          listingId={listing.id}
+          sellerName={listing.profiles?.name}
+          sellerAvatar={listing.profiles?.photo_url}
+        />
+      ))}
+    </>
+  );
+};
+
+const FavoritedListings = () => {
+  const { user } = useAuth();
+  const [favoritedListings, setFavoritedListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchFavoritedListings = async () => {
+      const { data } = await supabase
+        .from("favorites")
+        .select(`
+          listing_id,
+          listings (
+            *,
+            profiles:user_id (
+              name,
+              photo_url
+            )
+          )
+        `)
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        const listings = data.map((item: any) => item.listings).filter(Boolean);
+        setFavoritedListings(listings);
+      }
+      setLoading(false);
+    };
+
+    fetchFavoritedListings();
+  }, [user]);
+
+  if (loading) {
+    return <div className="text-center py-12 text-muted-foreground">Carregando...</div>;
+  }
+
+  if (favoritedListings.length === 0) {
+    return <div className="text-center py-12 text-muted-foreground">Nenhum anúncio favoritado</div>;
+  }
+
+  return (
+    <>
+      {favoritedListings.map((listing) => (
+        <VehicleCard 
+          key={listing.id}
+          id={listing.id}
+          title={listing.brand_model}
+          price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+          location={listing.location}
+          distance="--"
+          views={listing.views}
+          image={listing.thumbnail_url || listing.images?.[0] || ""}
+          category={listing.category}
+          acceptsTrade={listing.accepts_trade}
+          variant="list"
+          sellerId={listing.user_id}
+          listingId={listing.id}
+          sellerName={listing.profiles?.name}
+          sellerAvatar={listing.profiles?.photo_url}
+        />
+      ))}
+    </>
+  );
+};
+
 
 const Profile = () => {
   const { user, loading, signOut } = useAuth();
@@ -206,9 +340,10 @@ const Profile = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="active" className="px-4">
-          <TabsList className="w-full grid grid-cols-2 bg-card">
+          <TabsList className="w-full grid grid-cols-3 bg-card">
             <TabsTrigger value="active">Ativos</TabsTrigger>
-            <TabsTrigger value="sold">Vendidos</TabsTrigger>
+            <TabsTrigger value="liked">Curtidos</TabsTrigger>
+            <TabsTrigger value="favorites">Favoritos</TabsTrigger>
           </TabsList>
           
           <TabsContent value="active" className="space-y-3 mt-4">
@@ -222,7 +357,6 @@ const Profile = () => {
                   location={listing.location}
                   distance="Você"
                   views={listing.views}
-                  likes={listing.likes}
                   image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                   category={listing.category}
                   acceptsTrade={listing.accepts_trade}
@@ -238,10 +372,12 @@ const Profile = () => {
             )}
           </TabsContent>
           
-          <TabsContent value="sold" className="mt-4">
-            <div className="text-center py-12 text-muted-foreground">
-              <p>Nenhum item vendido ainda</p>
-            </div>
+          <TabsContent value="liked" className="space-y-3 mt-4">
+            <LikedListings />
+          </TabsContent>
+
+          <TabsContent value="favorites" className="space-y-3 mt-4">
+            <FavoritedListings />
           </TabsContent>
         </Tabs>
       </main>
