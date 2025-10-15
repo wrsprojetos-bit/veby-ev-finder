@@ -164,7 +164,7 @@ const Index = () => {
       {/* Content */}
       <main className="pt-0">
         {viewMode === "feed" ? (
-          <div className="snap-y snap-mandatory overflow-y-scroll h-screen">
+          <div className="snap-y snap-mandatory overflow-y-scroll h-[calc(100vh-56px)]" data-scroll-root="true" id="feed-scroll">
             {listings.map((listing) => (
               <VehicleCard 
                 key={listing.id}

@@ -55,12 +55,26 @@ export const VehicleCard = ({
   useEffect(() => {
     if (variant === "feed" && videoRef.current) {
       const el = videoRef.current;
+
+      // Garantir flags corretas no iOS/Safari
+      el.muted = true;
+      el.defaultMuted = true as any;
+      try {
+        (el as any).playsInline = true;
+        el.setAttribute('playsinline', 'true');
+        el.setAttribute('webkit-playsinline', 'true');
+      } catch {}
+
       const tryPlay = () => {
         el.muted = true; // garante políticas de autoplay
         el.play().catch((err) => {
           console.debug('autoplay prevented', err);
         });
       };
+
+      // Usar o container de scroll como root para IO (corrige Safari/containers)
+      const rootEl = el.closest('[data-scroll-root="true"]');
+
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -71,15 +85,23 @@ export const VehicleCard = ({
             }
           });
         },
-        { threshold: 0.2, rootMargin: '-72px 0px -96px 0px' }
+        { threshold: 0.4, root: (rootEl as Element) || null, rootMargin: '0px 0px 0px 0px' }
       );
 
-      // tocar assim que tiver metadata na primeira renderização
+      // tocar assim que tiver metadata / pode reproduzir
       el.addEventListener('loadedmetadata', tryPlay, { once: true });
+      el.addEventListener('canplay', tryPlay, { once: true });
+
+      // Fallback para iOS: primeira interação do usuário
+      const onFirstTouch = () => tryPlay();
+      window.addEventListener('touchstart', onFirstTouch, { once: true, passive: true });
+
       observer.observe(el);
       return () => {
         observer.disconnect();
         el.removeEventListener('loadedmetadata', tryPlay);
+        el.removeEventListener('canplay', tryPlay);
+        window.removeEventListener('touchstart', onFirstTouch);
       };
     }
   }, [variant, videoUrl]);
@@ -183,9 +205,10 @@ export const VehicleCard = ({
               muted
               playsInline
               autoPlay
-              preload="metadata"
+              preload="auto"
               poster={image}
               webkit-playsinline="true"
+              disablePictureInPicture
             />
           ) : (
             <img
