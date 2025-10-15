@@ -35,7 +35,7 @@ const Publish = () => {
     }
   }, [user, loading, navigate]);
 
-  // Validação de vídeo: máx 30s e formato vertical 9:16
+  // Validação de vídeo: máx 60s e formato vertical 9:16
   const validateVideoFile = (file: File): Promise<{ ok: boolean; url?: string; reason?: string }> => {
     return new Promise((resolve) => {
       const url = URL.createObjectURL(file);
@@ -50,8 +50,8 @@ const Publish = () => {
         const target = 9 / 16;
         const within = Math.abs(ratio - target) < 0.06; // tolerância ~±0.06
         URL.revokeObjectURL(url);
-        if (duration > 30.5) {
-          resolve({ ok: false, reason: 'Vídeo deve ter no máximo 30 segundos' });
+        if (duration > 60.5) {
+          resolve({ ok: false, reason: 'Vídeo deve ter no máximo 60 segundos (1 minuto)' });
         } else if (!within) {
           resolve({ ok: false, reason: 'Vídeo deve estar no formato vertical 9:16 (ex: 720x1280)' });
         } else {
@@ -195,7 +195,7 @@ const Publish = () => {
                 >
                   <Video className="w-8 h-8 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Adicionar vídeo</span>
-                  <span className="text-xs text-muted-foreground">Máx 30s • Vertical 9:16 (720x1280 recomendado) • até 100MB</span>
+                  <span className="text-xs text-muted-foreground">Máx 1 min • Vertical 9:16 (720x1280 recomendado) • até 100MB</span>
                 </label>
               </div>
             ) : (
