@@ -172,7 +172,9 @@ export const VehicleCard = ({
               loop
               muted
               playsInline
+              autoPlay
               preload="metadata"
+              poster={image}
               webkit-playsinline="true"
             />
           ) : (

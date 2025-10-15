@@ -35,11 +35,46 @@ const Publish = () => {
     }
   }, [user, loading, navigate]);
 
-  const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Validação de vídeo: máx 30s e formato vertical 9:16
+  const validateVideoFile = (file: File): Promise<{ ok: boolean; url?: string; reason?: string }> => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      vid.src = url;
+      vid.onloadedmetadata = () => {
+        const duration = vid.duration;
+        const w = vid.videoWidth;
+        const h = vid.videoHeight;
+        const ratio = w / h; // 9:16 ~ 0.5625
+        const target = 9 / 16;
+        const within = Math.abs(ratio - target) < 0.06; // tolerância ~±0.06
+        URL.revokeObjectURL(url);
+        if (duration > 30.5) {
+          resolve({ ok: false, reason: 'Vídeo deve ter no máximo 30 segundos' });
+        } else if (!within) {
+          resolve({ ok: false, reason: 'Vídeo deve estar no formato vertical 9:16 (ex: 720x1280)' });
+        } else {
+          resolve({ ok: true });
+        }
+      };
+      vid.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve({ ok: false, reason: 'Não foi possível ler o vídeo. Tente outro arquivo.' });
+      };
+    });
+  };
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 100 * 1024 * 1024) { // 100MB limit
-        toast.error("Vídeo muito grande! Máximo 100MB");
+      if (file.size > 100 * 1024 * 1024) { // 100MB
+        toast.error('Vídeo muito grande! Máximo 100MB');
+        return;
+      }
+      const result = await validateVideoFile(file);
+      if (!result.ok) {
+        toast.error(result.reason || 'Vídeo inválido');
         return;
       }
       setVideoFile(file);
@@ -156,15 +191,15 @@ const Publish = () => {
                 />
                 <label
                   htmlFor="video-upload"
-                  className="aspect-video rounded-xl border-2 border-dashed border-border bg-card hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer"
+                  className="aspect-[9/16] rounded-xl border-2 border-dashed border-border bg-card hover:border-primary/50 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer"
                 >
                   <Video className="w-8 h-8 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Adicionar vídeo</span>
-                  <span className="text-xs text-muted-foreground">Máximo 100MB</span>
+                  <span className="text-xs text-muted-foreground">Máx 30s • Vertical 9:16 (720x1280 recomendado) • até 100MB</span>
                 </label>
               </div>
             ) : (
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-black">
+              <div className="relative aspect-[9/16] rounded-xl overflow-hidden bg-black">
                 <video
                   src={videoPreview}
                   className="w-full h-full object-cover"
