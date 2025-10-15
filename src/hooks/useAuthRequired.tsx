@@ -10,6 +10,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export const useAuthRequired = () => {
   const { user } = useAuth();
@@ -27,7 +29,15 @@ export const useAuthRequired = () => {
 
   const LoginDialog = () => (
     <AlertDialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-      <AlertDialogContent>
+      <AlertDialogContent className="relative">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowLoginDialog(false)}
+          className="absolute right-4 top-4 rounded-sm opacity-70 hover:opacity-100"
+        >
+          <X className="h-4 w-4" />
+        </Button>
         <AlertDialogHeader>
           <AlertDialogTitle>Login necessário</AlertDialogTitle>
           <AlertDialogDescription>
