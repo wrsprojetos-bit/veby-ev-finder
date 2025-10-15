@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { useChat } from "@/hooks/useChat";
 import { useLikesAndFavorites } from "@/hooks/useLikesAndFavorites";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface VehicleCardProps {
   id?: any;
@@ -49,6 +49,30 @@ export const VehicleCard = ({
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const [isExpanded, setIsExpanded] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Auto-play video when in view (TikTok style)
+  useEffect(() => {
+    if (variant === "feed" && videoRef.current) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              videoRef.current?.play().catch(() => {
+                // Autoplay might be blocked, that's ok
+              });
+            } else {
+              videoRef.current?.pause();
+            }
+          });
+        },
+        { threshold: 0.5 }
+      );
+
+      observer.observe(videoRef.current);
+      return () => observer.disconnect();
+    }
+  }, [variant, videoUrl]);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -142,12 +166,14 @@ export const VehicleCard = ({
         <div className="absolute inset-0 overflow-hidden">
           {videoUrl ? (
             <video
+              ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-cover"
-              autoPlay
               loop
               muted
               playsInline
+              preload="metadata"
+              webkit-playsinline="true"
             />
           ) : (
             <img
