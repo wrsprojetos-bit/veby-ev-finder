@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminRole } from "@/hooks/useAdminRole";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Package, Users, AlertCircle, Bell, Monitor, FileText, LogOut } from "lucide-react";
+import { LayoutDashboard, Package, Users, AlertCircle, Bell, Monitor, FileText, LogOut, Eye } from "lucide-react";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -39,6 +39,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const menuItems = [
     { icon: LayoutDashboard, label: "Dashboard", path: "/admin" },
+    { icon: Eye, label: "Preview Perfis", path: "/admin/profile-preview" },
     { icon: Package, label: "Anúncios", path: "/admin/listings" },
     { icon: Users, label: "Usuários", path: "/admin/users" },
     { icon: AlertCircle, label: "Denúncias", path: "/admin/reports" },
