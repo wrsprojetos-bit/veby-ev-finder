@@ -64,7 +64,7 @@ export const useChat = () => {
             .from("profiles")
             .select("name, photo_url")
             .eq("id", otherUserId)
-            .single();
+            .maybeSingle();
 
           // Pegar última mensagem
           const lastMessage = chat.messages?.[0];
@@ -117,6 +117,16 @@ export const useChat = () => {
 
       if (existingChat) {
         return existingChat.id;
+      }
+
+      // Verificar se o vendedor não é o próprio usuário
+      if (user.id === sellerId) {
+        toast({
+          title: "Erro",
+          description: "Você não pode negociar com você mesmo",
+          variant: "destructive",
+        });
+        return null;
       }
 
       // Criar novo chat

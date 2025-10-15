@@ -27,11 +27,13 @@ const Auth = () => {
         const userName = session.user.user_metadata?.name || session.user.email?.split('@')[0];
         
         // Check if user is admin
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
-          .single();
+          .maybeSingle();
+        
+        console.log("Session check - Role data:", roleData, "Error:", roleError);
         
         toast({
           title: `Bem-vindo ao VEBY, ${userName}! 🚀`,
@@ -40,8 +42,10 @@ const Auth = () => {
         
         // Redirect to admin panel if super admin
         if (roleData?.role === "super_admin") {
+          console.log("Redirecting to admin panel");
           navigate("/admin");
         } else {
+          console.log("Redirecting to home");
           navigate("/");
         }
       }
@@ -100,11 +104,13 @@ const Auth = () => {
       const userName = data.user?.user_metadata?.name || data.user?.email?.split('@')[0];
       
       // Check if user is admin
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", data.user.id)
-        .single();
+        .maybeSingle();
+      
+      console.log("Login - Role data:", roleData, "Error:", roleError);
       
       toast({
         title: `Bem-vindo ao VEBY, ${userName}! 🚀`,
@@ -113,8 +119,10 @@ const Auth = () => {
       
       // Redirect to admin panel if super admin
       if (roleData?.role === "super_admin") {
+        console.log("Redirecting to admin panel");
         navigate("/admin");
       } else {
+        console.log("Redirecting to home");
         navigate("/");
       }
     } catch (error: any) {

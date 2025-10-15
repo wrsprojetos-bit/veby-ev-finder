@@ -71,6 +71,9 @@ export const useLikesAndFavorites = (listingId?: string) => {
         setIsLiked(false);
         setLikesCount((prev) => Math.max(0, prev - 1));
         toast.success("Curtida removida");
+      } else {
+        console.error("Erro ao remover curtida:", error);
+        toast.error("Erro ao remover curtida");
       }
     } else {
       const { error } = await supabase
@@ -81,6 +84,9 @@ export const useLikesAndFavorites = (listingId?: string) => {
         setIsLiked(true);
         setLikesCount((prev) => prev + 1);
         toast.success("Curtido!");
+      } else {
+        console.error("Erro ao curtir:", error);
+        toast.error("Erro ao curtir");
       }
     }
   };
@@ -101,6 +107,9 @@ export const useLikesAndFavorites = (listingId?: string) => {
       if (!error) {
         setIsFavorited(false);
         toast.success("Removido dos favoritos");
+      } else {
+        console.error("Erro ao remover favorito:", error);
+        toast.error("Erro ao remover dos favoritos");
       }
     } else {
       const { error } = await supabase
@@ -110,6 +119,9 @@ export const useLikesAndFavorites = (listingId?: string) => {
       if (!error) {
         setIsFavorited(true);
         toast.success("Favoritado!");
+      } else {
+        console.error("Erro ao favoritar:", error);
+        toast.error("Erro ao favoritar");
       }
     }
   };
