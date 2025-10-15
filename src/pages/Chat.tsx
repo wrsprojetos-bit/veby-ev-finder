@@ -24,6 +24,13 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
     if (chatIdFromUrl) {
       setSelectedChatId(chatIdFromUrl);
     }
@@ -41,6 +48,10 @@ const Chat = () => {
   };
 
   const selectedChat = chats.find((c) => c.id === selectedChatId);
+
+  if (!user) {
+    return null;
+  }
 
   if (selectedChatId && selectedChat) {
     return (

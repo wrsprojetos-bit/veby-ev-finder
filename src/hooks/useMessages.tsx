@@ -10,7 +10,10 @@ export const useMessages = (chatId: string | null) => {
   const [loading, setLoading] = useState(true);
 
   const fetchMessages = async () => {
-    if (!chatId) return;
+    if (!chatId || !user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -19,10 +22,19 @@ export const useMessages = (chatId: string | null) => {
         .eq("chat_id", chatId)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching messages:", error);
+        throw error;
+      }
+      
       setMessages(data || []);
     } catch (error) {
       console.error("Erro ao buscar mensagens:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as mensagens",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -56,28 +68,42 @@ export const useMessages = (chatId: string | null) => {
   }, [chatId]);
 
   const sendMessage = async (content: string, mediaUrl?: string) => {
-    if (!chatId || !user) return;
+    if (!chatId || !user) {
+      toast({
+        title: "Erro",
+        description: "Você precisa estar logado para enviar mensagens",
+        variant: "destructive",
+      });
+      return;
+    }
 
     try {
-      const { error } = await supabase.from("messages").insert({
+      const { error: insertError } = await supabase.from("messages").insert({
         chat_id: chatId,
         sender_id: user.id,
         content,
         media_url: mediaUrl,
       });
 
-      if (error) throw error;
+      if (insertError) {
+        console.error("Error inserting message:", insertError);
+        throw insertError;
+      }
 
       // Atualizar last_message_at do chat
-      await supabase
+      const { error: updateError } = await supabase
         .from("chats")
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", chatId);
-    } catch (error) {
+
+      if (updateError) {
+        console.error("Error updating chat:", updateError);
+      }
+    } catch (error: any) {
       console.error("Erro ao enviar mensagem:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível enviar a mensagem",
+        description: error.message || "Não foi possível enviar a mensagem",
         variant: "destructive",
       });
     }

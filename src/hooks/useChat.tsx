@@ -41,38 +41,57 @@ export const useChat = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchChats = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from("chats")
         .select(`
           *,
-          listing:listings(brand_model, thumbnail_url, images),
-          messages(content, created_at)
+          listing:listing_id(brand_model, thumbnail_url, images)
         `)
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
         .order("last_message_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching chats:", error);
+        throw error;
+      }
 
-      // Buscar informações dos outros usuários
+      if (!data) {
+        setChats([]);
+        setLoading(false);
+        return;
+      }
+
+      // Buscar informações dos outros usuários e últimas mensagens
       const chatsWithUsers = await Promise.all(
         data.map(async (chat) => {
           const otherUserId = chat.user1_id === user.id ? chat.user2_id : chat.user1_id;
+          
+          // Buscar perfil do outro usuário
           const { data: profile } = await supabase
             .from("profiles")
             .select("name, photo_url")
             .eq("id", otherUserId)
             .maybeSingle();
 
-          // Pegar última mensagem
-          const lastMessage = chat.messages?.[0];
+          // Buscar última mensagem
+          const { data: lastMessageData } = await supabase
+            .from("messages")
+            .select("content, created_at")
+            .eq("chat_id", chat.id)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
           return {
             ...chat,
             other_user: profile,
-            last_message: lastMessage,
+            last_message: lastMessageData,
           };
         })
       );
