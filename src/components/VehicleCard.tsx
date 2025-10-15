@@ -54,23 +54,33 @@ export const VehicleCard = ({
   // Auto-play video when in view (TikTok style)
   useEffect(() => {
     if (variant === "feed" && videoRef.current) {
+      const el = videoRef.current;
+      const tryPlay = () => {
+        el.muted = true; // garante políticas de autoplay
+        el.play().catch((err) => {
+          console.debug('autoplay prevented', err);
+        });
+      };
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
-              videoRef.current?.play().catch(() => {
-                // Autoplay might be blocked, that's ok
-              });
+              tryPlay();
             } else {
-              videoRef.current?.pause();
+              el.pause();
             }
           });
         },
-        { threshold: 0.5 }
+        { threshold: 0.2, rootMargin: '-72px 0px -96px 0px' }
       );
 
-      observer.observe(videoRef.current);
-      return () => observer.disconnect();
+      // tocar assim que tiver metadata na primeira renderização
+      el.addEventListener('loadedmetadata', tryPlay, { once: true });
+      observer.observe(el);
+      return () => {
+        observer.disconnect();
+        el.removeEventListener('loadedmetadata', tryPlay);
+      };
     }
   }, [variant, videoUrl]);
 
