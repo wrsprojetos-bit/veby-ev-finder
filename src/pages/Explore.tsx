@@ -101,6 +101,7 @@ const Explore = () => {
               distance="2.3 km"
               views={listing.views}
               image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+              videoUrl={listing.video_url}
               category={listing.category}
               acceptsTrade={listing.accepts_trade}
               variant="list"

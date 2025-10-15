@@ -174,7 +174,8 @@ const Index = () => {
                 location={listing.profiles?.location || listing.location}
                 distance="2.5 km"
                 views={listing.views}
-                image={listing.video_url || listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                videoUrl={listing.video_url}
                 category={listing.category}
                 acceptsTrade={listing.accepts_trade}
                 variant="feed"
@@ -197,6 +198,7 @@ const Index = () => {
                 distance="2.5 km"
                 views={listing.views}
                 image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                videoUrl={listing.video_url}
                 category={listing.category}
                 acceptsTrade={listing.accepts_trade}
                 variant="list"
