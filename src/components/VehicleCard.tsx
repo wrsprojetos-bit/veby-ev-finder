@@ -85,7 +85,7 @@ export const VehicleCard = ({
             }
           });
         },
-        { threshold: 0.4, root: (rootEl as Element) || null, rootMargin: '0px 0px 0px 0px' }
+        { threshold: 0.15, root: (rootEl as Element) || null, rootMargin: '-56px 0px -64px 0px' }
       );
 
       // tocar assim que tiver metadata / pode reproduzir
@@ -193,7 +193,7 @@ export const VehicleCard = ({
   return (
     <>
       <LoginDialog />
-      <div className="relative w-full h-screen snap-start bg-black">
+      <div className="relative w-full h-[calc(100vh-56px)] snap-start bg-black">
         {/* Background Video or Image - Full Screen */}
         <div className="absolute inset-0 overflow-hidden">
           {videoUrl ? (
@@ -209,6 +209,17 @@ export const VehicleCard = ({
               poster={image}
               webkit-playsinline="true"
               disablePictureInPicture
+              controls={false}
+              onLoadedMetadata={(e) => {
+                const el = e.currentTarget;
+                el.muted = true;
+                el.play().catch(() => {});
+              }}
+              onCanPlay={(e) => {
+                const el = e.currentTarget;
+                el.muted = true;
+                el.play().catch(() => {});
+              }}
             />
           ) : (
             <img
