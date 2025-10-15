@@ -193,7 +193,7 @@ export const VehicleCard = ({
   return (
     <>
       <LoginDialog />
-      <div className="relative w-full h-[calc(100vh-56px)] snap-start bg-black">
+      <div className="relative w-full h-[calc(100vh-56px)] snap-start bg-black feed-item">
         {/* Background Video or Image - Full Screen */}
         <div className="absolute inset-0 overflow-hidden">
           {videoUrl ? (
