@@ -23,6 +23,13 @@ export const BottomNav = () => {
     });
   };
 
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    requireAuth(() => {
+      navigate("/profile");
+    });
+  };
+
   return (
     <>
       <LoginDialog />
@@ -41,6 +48,23 @@ export const BottomNav = () => {
                   <div className="absolute -top-6 p-3 rounded-full bg-gradient-primary shadow-glow-primary">
                     <Icon className="w-6 h-6 text-primary-foreground" />
                   </div>
+                </button>
+              );
+            }
+
+            if (label === "Perfil") {
+              return (
+                <button
+                  key={path}
+                  onClick={handleProfileClick}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all",
+                    isActive && "text-primary",
+                    !isActive && "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className={cn("w-6 h-6", isActive && "drop-shadow-glow-primary")} />
+                  <span className="text-xs font-medium">{label}</span>
                 </button>
               );
             }
