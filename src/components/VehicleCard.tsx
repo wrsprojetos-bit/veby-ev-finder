@@ -107,16 +107,7 @@ export const VehicleCard = ({
     return (
       <div className="flex gap-3 p-3 bg-card rounded-xl border border-border hover:border-primary/50 transition-all">
         <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
-          {videoUrl ? (
-            <video 
-              src={videoUrl} 
-              className="w-full h-full object-cover"
-              muted
-              playsInline
-            />
-          ) : (
-            <img src={image} alt={title} className="w-full h-full object-cover" />
-          )}
+          <img src={image} alt={title} className="w-full h-full object-cover" />
           {acceptsTrade && (
             <div className="absolute top-1 right-1 bg-secondary/90 text-secondary-foreground text-xs px-2 py-0.5 rounded">
               Troca
@@ -147,7 +138,7 @@ export const VehicleCard = ({
     <>
       <LoginDialog />
       <div className="relative w-full h-screen snap-start bg-black">
-        {/* Background Video/Image - Full Screen */}
+        {/* Background Video or Image - Full Screen */}
         <div className="absolute inset-0 overflow-hidden">
           {videoUrl ? (
             <video
