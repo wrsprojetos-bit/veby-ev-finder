@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import vebyLogo from "@/assets/veby-logo.png";
+import vebyLogo from "@/assets/veby-logo-new.png";
 import { Loader2, ArrowLeft } from "lucide-react";
 
 const Auth = () => {

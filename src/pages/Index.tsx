@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import vebyLogoTransparent from "@/assets/veby-logo-transparent.png";
+import vebyLogo from "@/assets/veby-logo-new.png";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { LayoutGrid, List, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import vebyLogo from "@/assets/veby-logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -143,7 +142,7 @@ const Index = () => {
             </Button>
           )}
           <div className="flex items-center gap-2 flex-1 justify-center">
-            <img src={vebyLogoTransparent} alt="VEBY" className="w-8 h-8" />
+            <img src={vebyLogo} alt="VEBY" className="w-10 h-10" />
             <h1 className="text-xl font-semibold text-foreground tracking-wide">VEBY</h1>
           </div>
           <Button
