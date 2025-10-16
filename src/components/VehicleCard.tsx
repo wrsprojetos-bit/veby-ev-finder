@@ -49,9 +49,10 @@ export const VehicleCard = ({
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Auto-play video when in view (TikTok style)
+  // Auto-play video when in view (TikTok style) - garantir que só 1 vídeo rode por vez
   useEffect(() => {
     if (variant === "feed" && videoRef.current) {
       const el = videoRef.current;
@@ -66,10 +67,15 @@ export const VehicleCard = ({
       } catch {}
 
       const tryPlay = () => {
-        el.muted = true; // garante políticas de autoplay
+        el.muted = isMuted; // respeita estado do som
         el.play().catch((err) => {
           console.debug('autoplay prevented', err);
         });
+      };
+
+      const tryPause = () => {
+        el.pause();
+        el.currentTime = 0; // volta pro início ao sair da tela
       };
 
       // Usar o container de scroll como root para IO (corrige Safari/containers)
@@ -78,14 +84,15 @@ export const VehicleCard = ({
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting) {
+            // Só inicia se > 80% visível (economia de dados e performance)
+            if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
               tryPlay();
             } else {
-              el.pause();
+              tryPause();
             }
           });
         },
-        { threshold: 0.15, root: (rootEl as Element) || null, rootMargin: '-56px 0px -64px 0px' }
+        { threshold: [0.8, 1.0], root: (rootEl as Element) || null, rootMargin: '-56px 0px -64px 0px' }
       );
 
       // tocar assim que tiver metadata / pode reproduzir
@@ -104,7 +111,7 @@ export const VehicleCard = ({
         window.removeEventListener('touchstart', onFirstTouch);
       };
     }
-  }, [variant, videoUrl]);
+  }, [variant, videoUrl, isMuted]);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -195,14 +202,23 @@ export const VehicleCard = ({
       <LoginDialog />
       <div className="relative w-full h-[calc(100vh-56px)] snap-start bg-black feed-item">
         {/* Background Video or Image - Full Screen */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div 
+          className="absolute inset-0 overflow-hidden"
+          onClick={() => {
+            // Toggle som ao tocar no vídeo (estilo TikTok)
+            if (videoRef.current) {
+              setIsMuted(!isMuted);
+              videoRef.current.muted = !isMuted;
+            }
+          }}
+        >
           {videoUrl ? (
             <video
               ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-cover"
               loop
-              muted
+              muted={isMuted}
               playsInline
               autoPlay
               preload="auto"
@@ -212,12 +228,12 @@ export const VehicleCard = ({
               controls={false}
               onLoadedMetadata={(e) => {
                 const el = e.currentTarget;
-                el.muted = true;
+                el.muted = isMuted;
                 el.play().catch(() => {});
               }}
               onCanPlay={(e) => {
                 const el = e.currentTarget;
-                el.muted = true;
+                el.muted = isMuted;
                 el.play().catch(() => {});
               }}
             />
@@ -227,6 +243,22 @@ export const VehicleCard = ({
               alt={title}
               className="w-full h-full object-cover"
             />
+          )}
+          
+          {/* Indicador de som mutado/ativado */}
+          {videoUrl && (
+            <div className="absolute top-4 right-4 bg-black/50 rounded-full p-2">
+              {isMuted ? (
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                </svg>
+              )}
+            </div>
           )}
         </div>
 
