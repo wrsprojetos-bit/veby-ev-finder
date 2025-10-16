@@ -247,7 +247,7 @@ export const VehicleCard = ({
           
           {/* Indicador de som mutado/ativado */}
           {videoUrl && (
-            <div className="absolute top-4 right-4 bg-black/50 rounded-full p-2">
+            <div className="absolute right-4 bottom-28 bg-black/50 rounded-full p-2">
               {isMuted ? (
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
