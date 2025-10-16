@@ -263,7 +263,7 @@ export const VehicleCard = ({
         </div>
 
         {/* Right Side Actions - TikTok Style */}
-        <div className="absolute right-3 bottom-32 flex flex-col items-center gap-4 z-20">
+        <div className="absolute right-3 bottom-20 flex flex-col items-center gap-4 z-20">
           {/* Profile Avatar - Click to view seller profile */}
           <button 
             onClick={() => {
@@ -315,7 +315,7 @@ export const VehicleCard = ({
         </div>
 
         {/* Bottom Info Overlay - TikTok Style */}
-        <div className="absolute inset-x-0 bottom-16 z-10">
+        <div className="absolute inset-x-0 bottom-0 z-10">
           {/* Faixa Preta Semi-Transparente */}
           <div 
             className={cn(
