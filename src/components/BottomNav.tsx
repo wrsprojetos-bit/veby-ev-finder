@@ -33,7 +33,7 @@ export const BottomNav = () => {
   return (
     <>
       <LoginDialog />
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border backdrop-blur-lg bg-opacity-95">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border backdrop-blur-lg bg-opacity-95">
         <div className="flex items-center justify-around h-16 px-2">
           {navItems.map(({ icon: Icon, label, path, highlight }) => {
             const isActive = location.pathname === path;
