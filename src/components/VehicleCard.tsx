@@ -54,61 +54,40 @@ export const VehicleCard = ({
 
   // Auto-play video when in view (TikTok style) - garantir que só 1 vídeo rode por vez
   useEffect(() => {
-    if (variant === "feed" && videoRef.current) {
+    if (variant === "feed" && videoRef.current && videoUrl) {
       const el = videoRef.current;
 
-      // Garantir flags corretas no iOS/Safari
-      el.muted = true;
-      el.defaultMuted = true as any;
-      try {
-        (el as any).playsInline = true;
-        el.setAttribute('playsinline', 'true');
-        el.setAttribute('webkit-playsinline', 'true');
-      } catch {}
-
       const tryPlay = () => {
-        el.muted = isMuted; // respeita estado do som
-        el.play().catch((err) => {
-          console.debug('autoplay prevented', err);
-        });
+        el.muted = isMuted;
+        el.play().catch(() => {});
       };
 
       const tryPause = () => {
         el.pause();
-        el.currentTime = 0; // volta pro início ao sair da tela
+        el.currentTime = 0;
+        el.muted = true;
+        setIsMuted(true);
       };
 
-      // Usar o container de scroll como root para IO (corrige Safari/containers)
       const rootEl = el.closest('[data-scroll-root="true"]');
 
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            // Só inicia se > 80% visível (economia de dados e performance)
-            if (entry.isIntersecting && entry.intersectionRatio > 0.8) {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.75) {
               tryPlay();
             } else {
               tryPause();
             }
           });
         },
-        { threshold: [0.8, 1.0], root: (rootEl as Element) || null, rootMargin: '-56px 0px -64px 0px' }
+        { threshold: [0.5, 0.75, 1.0], root: (rootEl as Element) || null }
       );
-
-      // tocar assim que tiver metadata / pode reproduzir
-      el.addEventListener('loadedmetadata', tryPlay, { once: true });
-      el.addEventListener('canplay', tryPlay, { once: true });
-
-      // Fallback para iOS: primeira interação do usuário
-      const onFirstTouch = () => tryPlay();
-      window.addEventListener('touchstart', onFirstTouch, { once: true, passive: true });
 
       observer.observe(el);
       return () => {
         observer.disconnect();
-        el.removeEventListener('loadedmetadata', tryPlay);
-        el.removeEventListener('canplay', tryPlay);
-        window.removeEventListener('touchstart', onFirstTouch);
+        tryPause();
       };
     }
   }, [variant, videoUrl, isMuted]);
@@ -200,7 +179,7 @@ export const VehicleCard = ({
   return (
     <>
       <LoginDialog />
-      <div className="relative w-full h-[calc(100vh-56px)] md:h-screen md:max-w-[500px] snap-start bg-black feed-item md:rounded-lg md:overflow-hidden md:shadow-2xl">
+      <div className="relative w-full h-[calc(100vh-56px)] md:h-screen md:max-w-[500px] snap-start snap-always bg-black feed-item md:rounded-lg md:overflow-hidden md:shadow-2xl">
         {/* Background Video or Image - Full Screen */}
         <div 
           className="absolute inset-0 overflow-hidden"
@@ -220,22 +199,11 @@ export const VehicleCard = ({
               loop
               muted={isMuted}
               playsInline
-              autoPlay
               preload="auto"
               poster={image}
               webkit-playsinline="true"
               disablePictureInPicture
               controls={false}
-              onLoadedMetadata={(e) => {
-                const el = e.currentTarget;
-                el.muted = isMuted;
-                el.play().catch(() => {});
-              }}
-              onCanPlay={(e) => {
-                const el = e.currentTarget;
-                el.muted = isMuted;
-                el.play().catch(() => {});
-              }}
             />
           ) : (
             <img

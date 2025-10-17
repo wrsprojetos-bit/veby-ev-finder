@@ -251,27 +251,29 @@ const Index = () => {
       {/* Content */}
       <main className="pt-0 md:ml-64">
         {viewMode === "feed" ? (
-          <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:flex md:items-center md:justify-center" data-scroll-root="true" id="feed-scroll">
-            {listings.map((listing) => (
-              <VehicleCard 
-                key={listing.id}
-                id={listing.id}
-                title={listing.brand_model}
-                price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                location={listing.profiles?.location || listing.location}
-                distance="2.5 km"
-                views={listing.views}
-                image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-                videoUrl={listing.video_url}
-                category={listing.category}
-                acceptsTrade={listing.accepts_trade}
-                variant="feed"
-                sellerId={listing.user_id}
-                listingId={listing.id}
-                sellerName={listing.profiles?.name}
-                sellerAvatar={listing.profiles?.photo_url}
-              />
-            ))}
+          <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:snap-y md:snap-mandatory" data-scroll-root="true" id="feed-scroll">
+            <div className="md:flex md:flex-col md:items-center md:justify-start md:h-full">
+              {listings.map((listing) => (
+                <VehicleCard 
+                  key={listing.id}
+                  id={listing.id}
+                  title={listing.brand_model}
+                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                  location={listing.profiles?.location || listing.location}
+                  distance="2.5 km"
+                  views={listing.views}
+                  image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                  videoUrl={listing.video_url}
+                  category={listing.category}
+                  acceptsTrade={listing.accepts_trade}
+                  variant="feed"
+                  sellerId={listing.user_id}
+                  listingId={listing.id}
+                  sellerName={listing.profiles?.name}
+                  sellerAvatar={listing.profiles?.photo_url}
+                />
+              ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-3 p-4 pt-20 md:pt-4">
