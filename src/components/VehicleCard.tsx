@@ -49,36 +49,36 @@ export const VehicleCard = ({
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false); // Começa com som ativado
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Auto-play video when in view (TikTok style) - garantir que só 1 vídeo rode por vez
+  // Auto-play video when in view (TikTok style)
   useEffect(() => {
     if (variant === "feed" && videoRef.current && videoUrl) {
       const el = videoRef.current;
 
-      const tryPlay = () => {
-        // Respeita o estado de muted escolhido pelo usuário
+      const tryPlay = async () => {
         el.muted = isMuted;
-        const playPromise = el.play();
-        
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            // Se falhar com som, tenta mutado
-            if (!el.muted) {
-              console.log('Autoplay com som bloqueado, tentando mutado');
-              el.muted = true;
-              setIsMuted(true);
-              el.play().catch(() => {});
+        try {
+          await el.play();
+        } catch (error) {
+          // Se falhar por restrição de autoplay com som, tenta mutado
+          if (!isMuted) {
+            console.log('Autoplay com som bloqueado. Clique no botão de som para ativar.');
+            el.muted = true;
+            setIsMuted(true);
+            try {
+              await el.play();
+            } catch (e) {
+              console.log('Não foi possível reproduzir o vídeo');
             }
-          });
+          }
         }
       };
 
       const tryPause = () => {
         el.pause();
         el.currentTime = 0;
-        // Não reseta o estado de muted ao trocar de vídeo
       };
 
       const rootEl = el.closest('[data-scroll-root="true"]');
@@ -218,14 +218,19 @@ export const VehicleCard = ({
             />
           )}
           
-          {/* Indicador de som mutado/ativado */}
+          {/* Botão de controle de áudio global */}
           {videoUrl && (
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                setIsMuted(!isMuted);
+                const newMutedState = !isMuted;
+                setIsMuted(newMutedState);
                 if (videoRef.current) {
-                  videoRef.current.muted = !isMuted;
+                  videoRef.current.muted = newMutedState;
+                  // Se estiver ativando o som, tenta tocar
+                  if (!newMutedState) {
+                    videoRef.current.play().catch(() => {});
+                  }
                 }
               }}
               className="absolute right-4 top-20 bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors"
