@@ -58,15 +58,27 @@ export const VehicleCard = ({
       const el = videoRef.current;
 
       const tryPlay = () => {
+        // Respeita o estado de muted escolhido pelo usuário
         el.muted = isMuted;
-        el.play().catch(() => {});
+        const playPromise = el.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            // Se falhar com som, tenta mutado
+            if (!el.muted) {
+              console.log('Autoplay com som bloqueado, tentando mutado');
+              el.muted = true;
+              setIsMuted(true);
+              el.play().catch(() => {});
+            }
+          });
+        }
       };
 
       const tryPause = () => {
         el.pause();
         el.currentTime = 0;
-        el.muted = true;
-        setIsMuted(true);
+        // Não reseta o estado de muted ao trocar de vídeo
       };
 
       const rootEl = el.closest('[data-scroll-root="true"]');
@@ -183,13 +195,6 @@ export const VehicleCard = ({
         {/* Background Video or Image - Full Screen */}
         <div 
           className="absolute inset-0 overflow-hidden"
-          onClick={() => {
-            // Toggle som ao tocar no vídeo (estilo TikTok)
-            if (videoRef.current) {
-              setIsMuted(!isMuted);
-              videoRef.current.muted = !isMuted;
-            }
-          }}
         >
           {videoUrl ? (
             <video
