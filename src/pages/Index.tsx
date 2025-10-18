@@ -11,6 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { CATEGORIES, BRAZILIAN_STATES } from "@/data/categories";
 import { useCities } from "@/hooks/useCities";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { LocationSelector } from "@/components/LocationSelector";
+import { toast } from "sonner";
 
 const Index = () => {
   const [viewMode, setViewMode] = useState<"feed" | "list">("feed");
@@ -20,13 +24,42 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
+  const [showLocationModal, setShowLocationModal] = useState(false);
   const cities = useCities(selectedState);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { location, requestLocation } = useGeolocation();
+  const { trackCategoryView, addRecentSearch, getFavoriteCategories } = useUserPreferences();
+
+  // Solicitar localização ao abrir pela primeira vez
+  useEffect(() => {
+    const hasRequestedLocation = localStorage.getItem('hasRequestedLocation');
+    if (!hasRequestedLocation && !location.state) {
+      setTimeout(() => {
+        setShowLocationModal(true);
+        localStorage.setItem('hasRequestedLocation', 'true');
+      }, 2000);
+    }
+  }, []);
+
+  // Usar localização do hook se disponível
+  useEffect(() => {
+    if (location.state && !selectedState) {
+      setSelectedState(location.state);
+    }
+    if (location.city && !selectedCity) {
+      setSelectedCity(location.city);
+    }
+  }, [location]);
 
   const fetchListings = async () => {
     try {
       setLoading(true);
+      
+      // Personalização: feed inteligente baseado em localização
+      const userCity = selectedCity || location.city;
+      const userState = selectedState || location.state;
+      
       let query = supabase
         .from("listings")
         .select(`
@@ -43,28 +76,39 @@ const Index = () => {
       // Filtro por categoria
       if (selectedCategory !== "Todos") {
         query = query.eq("category", selectedCategory);
-      }
-
-      // Filtro por estado
-      if (selectedState) {
-        query = query.eq("state", selectedState);
-      }
-
-      // Filtro por cidade
-      if (selectedCity) {
-        query = query.eq("city", selectedCity);
+        if (user) trackCategoryView(selectedCategory);
       }
 
       // Busca por texto
       if (searchQuery) {
         query = query.or(`brand_model.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        if (user) addRecentSearch(searchQuery);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(50);
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
 
       if (error) throw error;
       
-      setListings(data || []);
+      // Personalização do feed por localização (70% mesma cidade, 20% mesmo estado, 10% outros)
+      let sortedListings = data || [];
+      
+      if (userCity && userState) {
+        const sameCityListings = sortedListings.filter(l => l.city === userCity);
+        const sameStateListings = sortedListings.filter(l => l.state === userState && l.city !== userCity);
+        const otherListings = sortedListings.filter(l => l.state !== userState);
+        
+        // Embaralhar e combinar com proporções
+        const sameCityCount = Math.floor(sameCityListings.length * 0.7);
+        const sameStateCount = Math.floor(sameStateListings.length * 0.2);
+        
+        sortedListings = [
+          ...sameCityListings.slice(0, sameCityCount),
+          ...sameStateListings.slice(0, sameStateCount),
+          ...otherListings.slice(0, 10),
+        ].slice(0, 50);
+      }
+      
+      setListings(sortedListings);
     } catch (error) {
       console.error("Erro ao carregar anúncios:", error);
     } finally {
@@ -165,6 +209,20 @@ const Index = () => {
         {/* Top Bar */}
         <div className="px-4 py-3 flex items-center justify-between">
           <img src={vebyLogo} alt="VEBY" className="h-8" />
+          
+          {/* Localização atual - clicável */}
+          {(location.city || location.state) && (
+            <button
+              onClick={() => setShowLocationModal(true)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-full text-xs text-white hover:bg-white/20 transition-colors"
+            >
+              <MapPin className="w-3 h-3 text-[#00FF7F]" />
+              <span className="max-w-[120px] truncate">
+                {location.city}, {location.state}
+              </span>
+            </button>
+          )}
+          
           {!user && (
             <button 
               onClick={() => navigate('/auth')}
@@ -342,6 +400,15 @@ const Index = () => {
           </div>
         )}
       </main>
+
+      <LocationSelector 
+        open={showLocationModal} 
+        onOpenChange={setShowLocationModal}
+        onLocationChange={(state, city) => {
+          setSelectedState(state);
+          setSelectedCity(city);
+        }}
+      />
 
       <BottomNav />
     </div>

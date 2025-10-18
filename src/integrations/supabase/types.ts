@@ -381,6 +381,10 @@ export type Database = {
           id: string
           instagram_url: string | null
           location: string | null
+          location_city: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_state: string | null
           logo_url: string | null
           name: string
           photo_url: string | null
@@ -404,6 +408,10 @@ export type Database = {
           id: string
           instagram_url?: string | null
           location?: string | null
+          location_city?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_state?: string | null
           logo_url?: string | null
           name: string
           photo_url?: string | null
@@ -427,6 +435,10 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           location?: string | null
+          location_city?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_state?: string | null
           logo_url?: string | null
           name?: string
           photo_url?: string | null
@@ -558,6 +570,42 @@ export type Database = {
           reported_user_id?: string
           reporter_id?: string
           status?: string | null
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          favorite_categories: string[] | null
+          id: string
+          last_filter: Json | null
+          liked_listings: string[] | null
+          recent_searches: string[] | null
+          updated_at: string | null
+          user_id: string
+          view_count_per_category: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          favorite_categories?: string[] | null
+          id?: string
+          last_filter?: Json | null
+          liked_listings?: string[] | null
+          recent_searches?: string[] | null
+          updated_at?: string | null
+          user_id: string
+          view_count_per_category?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          favorite_categories?: string[] | null
+          id?: string
+          last_filter?: Json | null
+          liked_listings?: string[] | null
+          recent_searches?: string[] | null
+          updated_at?: string | null
+          user_id?: string
+          view_count_per_category?: Json | null
         }
         Relationships: []
       }

@@ -3,8 +3,35 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
 
+// Hook para integrar preferências
+const usePreferencesUpdate = () => {
+  const { user } = useAuth();
+  
+  const addLikedListing = async (listingId: string) => {
+    if (!user) return;
+    
+    const { data: prefs } = await supabase
+      .from('user_preferences')
+      .select('liked_listings')
+      .eq('user_id', user.id)
+      .single();
+    
+    if (prefs) {
+      const liked = [...new Set([...(prefs.liked_listings || []), listingId])];
+      await supabase
+        .from('user_preferences')
+        .update({ liked_listings: liked })
+        .eq('user_id', user.id);
+    }
+  };
+  
+  return { addLikedListing };
+};
+
+
 export const useLikesAndFavorites = (listingId?: string) => {
   const { user } = useAuth();
+  const { addLikedListing } = usePreferencesUpdate();
   const [isLiked, setIsLiked] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
@@ -83,6 +110,10 @@ export const useLikesAndFavorites = (listingId?: string) => {
       if (!error) {
         setIsLiked(true);
         setLikesCount((prev) => prev + 1);
+        
+        // Atualizar preferências
+        await addLikedListing(listingId);
+        
         toast.success("Curtido!");
       } else {
         console.error("Erro ao curtir:", error);
