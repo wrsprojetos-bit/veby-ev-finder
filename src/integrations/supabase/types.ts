@@ -254,6 +254,7 @@ export type Database = {
           city: string | null
           created_at: string | null
           description: string | null
+          engagement_score: number | null
           id: string
           images: string[] | null
           likes: number | null
@@ -263,6 +264,7 @@ export type Database = {
           state: string | null
           status: string | null
           subcategory: string | null
+          tags: string[] | null
           thumbnail_url: string | null
           type: string
           user_id: string
@@ -276,6 +278,7 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           description?: string | null
+          engagement_score?: number | null
           id?: string
           images?: string[] | null
           likes?: number | null
@@ -285,6 +288,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           subcategory?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           type: string
           user_id: string
@@ -298,6 +302,7 @@ export type Database = {
           city?: string | null
           created_at?: string | null
           description?: string | null
+          engagement_score?: number | null
           id?: string
           images?: string[] | null
           likes?: number | null
@@ -307,6 +312,7 @@ export type Database = {
           state?: string | null
           status?: string | null
           subcategory?: string | null
+          tags?: string[] | null
           thumbnail_url?: string | null
           type?: string
           user_id?: string
@@ -632,6 +638,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      view_history: {
+        Row: {
+          id: string
+          listing_id: string
+          user_id: string
+          viewed_at: string | null
+          watch_time_seconds: number | null
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          user_id: string
+          viewed_at?: string | null
+          watch_time_seconds?: number | null
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          user_id?: string
+          viewed_at?: string | null
+          watch_time_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "view_history_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
