@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
+import { ExploreGridCard } from "@/components/ExploreGridCard";
 import { Button } from "@/components/ui/button";
-import { Search, LogIn, MapPin } from "lucide-react";
+import { Search, LogIn, MapPin, Grid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,7 @@ const Explore = () => {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const cities = useCities(selectedState);
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -104,7 +106,7 @@ const Explore = () => {
     <div className="min-h-screen bg-black pb-16">
       <header className="fixed top-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-lg border-b border-white/10">
         <div className="px-4 py-3 space-y-3">
-          {/* Barra de busca e localização */}
+          {/* Barra de busca, localização e modo de visualização */}
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
@@ -116,11 +118,25 @@ const Explore = () => {
               />
             </div>
             
+            {/* Botão de alternar visualização */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
+              className="hover:bg-white/10 text-white shrink-0"
+            >
+              {viewMode === "grid" ? (
+                <List className="w-5 h-5" />
+              ) : (
+                <Grid className="w-5 h-5" />
+              )}
+            </Button>
+
             {/* Localização atual - clicável */}
             {(location.city || location.state) && (
               <button
                 onClick={() => setShowLocationModal(true)}
-                className="flex items-center gap-1 px-3 py-2 bg-white/10 rounded-lg text-xs text-white hover:bg-white/20 transition-colors border border-white/20"
+                className="flex items-center gap-1 px-3 py-2 bg-white/10 rounded-lg text-xs text-white hover:bg-white/20 transition-colors border border-white/20 shrink-0"
               >
                 <MapPin className="w-4 h-4 text-[#00FF7F]" />
                 <span className="hidden sm:inline max-w-[100px] truncate">
@@ -133,10 +149,10 @@ const Explore = () => {
               <Button 
                 onClick={() => navigate("/auth")}
                 size="sm"
-                className="bg-[#00FF7F] text-black hover:bg-[#00FF7F]/90"
+                className="bg-[#00FF7F] text-black hover:bg-[#00FF7F]/90 shrink-0"
               >
-                <LogIn className="w-4 h-4 mr-1" />
-                Entrar
+                <LogIn className="w-4 h-4 sm:mr-1" />
+                <span className="hidden sm:inline">Entrar</span>
               </Button>
             )}
           </div>
@@ -202,28 +218,50 @@ const Explore = () => {
         </div>
       </header>
 
-      <main className="pt-40 px-4 space-y-3">
+      <main className="pt-40 px-4">
         {listings.length > 0 ? (
-          listings.map((listing) => (
-            <VehicleCard 
-              key={listing.id} 
-              id={listing.id}
-              title={listing.brand_model}
-              price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-              location={`${listing.city || ''}, ${listing.state || ''}`}
-              distance="2.5 km"
-              views={listing.views}
-              image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-              videoUrl={listing.video_url}
-              category={listing.category}
-              acceptsTrade={listing.accepts_trade}
-              variant="list"
-              sellerId={listing.user_id}
-              listingId={listing.id}
-              sellerName={listing.profiles?.name}
-              sellerAvatar={listing.profiles?.photo_url}
-            />
-          ))
+          viewMode === "grid" ? (
+            // Visualização em grid com previews
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-4">
+              {listings.map((listing) => (
+                <ExploreGridCard
+                  key={listing.id}
+                  id={listing.id}
+                  title={listing.brand_model}
+                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                  thumbnail={listing.video_thumbnail || listing.thumbnail_url}
+                  preview={listing.video_preview}
+                  videoUrl={listing.video_url}
+                  image={listing.images?.[0]}
+                  views={listing.views || 0}
+                />
+              ))}
+            </div>
+          ) : (
+            // Visualização em lista
+            <div className="space-y-3 pb-4">
+              {listings.map((listing) => (
+                <VehicleCard 
+                  key={listing.id} 
+                  id={listing.id}
+                  title={listing.brand_model}
+                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                  location={`${listing.city || ''}, ${listing.state || ''}`}
+                  distance="2.5 km"
+                  views={listing.views}
+                  image={listing.video_thumbnail || listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                  videoUrl={listing.video_url}
+                  category={listing.category}
+                  acceptsTrade={listing.accepts_trade}
+                  variant="list"
+                  sellerId={listing.user_id}
+                  listingId={listing.id}
+                  sellerName={listing.profiles?.name}
+                  sellerAvatar={listing.profiles?.photo_url}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <div className="text-center py-12 text-white/70">
             <p>Nenhum anúncio disponível</p>

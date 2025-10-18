@@ -268,6 +268,8 @@ export type Database = {
           thumbnail_url: string | null
           type: string
           user_id: string
+          video_preview: string | null
+          video_thumbnail: string | null
           video_url: string | null
           views: number | null
         }
@@ -292,6 +294,8 @@ export type Database = {
           thumbnail_url?: string | null
           type: string
           user_id: string
+          video_preview?: string | null
+          video_thumbnail?: string | null
           video_url?: string | null
           views?: number | null
         }
@@ -316,6 +320,8 @@ export type Database = {
           thumbnail_url?: string | null
           type?: string
           user_id?: string
+          video_preview?: string | null
+          video_thumbnail?: string | null
           video_url?: string | null
           views?: number | null
         }
