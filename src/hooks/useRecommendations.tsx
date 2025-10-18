@@ -154,10 +154,9 @@ export const useRecommendations = (userCity?: string, userState?: string) => {
   };
 
   useEffect(() => {
-    if (preferences) {
-      fetchRecommendations();
-    }
-  }, [userCity, userState, preferences]);
+    // Buscar recomendações sempre, mesmo sem usuário logado
+    fetchRecommendations();
+  }, [userCity, userState]);
 
   return {
     recommendations,
