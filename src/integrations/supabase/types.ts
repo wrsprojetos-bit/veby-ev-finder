@@ -225,6 +225,41 @@ export type Database = {
           },
         ]
       }
+      interactions: {
+        Row: {
+          created_at: string | null
+          duration: number | null
+          id: string
+          listing_id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          listing_id: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          listing_id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       likes: {
         Row: {
           created_at: string
