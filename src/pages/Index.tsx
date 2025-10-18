@@ -13,23 +13,24 @@ import { CATEGORIES, BRAZILIAN_STATES } from "@/data/categories";
 import { useCities } from "@/hooks/useCities";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useRecommendations } from "@/hooks/useRecommendations";
 import { LocationSelector } from "@/components/LocationSelector";
 import { toast } from "sonner";
 
 const Index = () => {
   const [viewMode, setViewMode] = useState<"feed" | "list">("feed");
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const cities = useCities(selectedState);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { location, requestLocation } = useGeolocation();
-  const { trackCategoryView, addRecentSearch, getFavoriteCategories } = useUserPreferences();
+  const { location } = useGeolocation();
+  const { trackCategoryView, addRecentSearch } = useUserPreferences();
+  
+  // Hook de recomendações inteligentes
+  const userCity = selectedCity || location.city;
+  const userState = selectedState || location.state;
+  const { recommendations, loading } = useRecommendations(userCity, userState);
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
@@ -52,74 +53,6 @@ const Index = () => {
     }
   }, [location]);
 
-  const fetchListings = async () => {
-    try {
-      setLoading(true);
-      
-      // Personalização: feed inteligente baseado em localização
-      const userCity = selectedCity || location.city;
-      const userState = selectedState || location.state;
-      
-      let query = supabase
-        .from("listings")
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            photo_url,
-            location,
-            verified
-          )
-        `)
-        .eq("status", "ativo");
-
-      // Filtro por categoria
-      if (selectedCategory !== "Todos") {
-        query = query.eq("category", selectedCategory);
-        if (user) trackCategoryView(selectedCategory);
-      }
-
-      // Busca por texto
-      if (searchQuery) {
-        query = query.or(`brand_model.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-        if (user) addRecentSearch(searchQuery);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
-
-      if (error) throw error;
-      
-      // Personalização do feed por localização (70% mesma cidade, 20% mesmo estado, 10% outros)
-      let sortedListings = data || [];
-      
-      if (userCity && userState) {
-        const sameCityListings = sortedListings.filter(l => l.city === userCity);
-        const sameStateListings = sortedListings.filter(l => l.state === userState && l.city !== userCity);
-        const otherListings = sortedListings.filter(l => l.state !== userState);
-        
-        // Embaralhar e combinar com proporções
-        const sameCityCount = Math.floor(sameCityListings.length * 0.7);
-        const sameStateCount = Math.floor(sameStateListings.length * 0.2);
-        
-        sortedListings = [
-          ...sameCityListings.slice(0, sameCityCount),
-          ...sameStateListings.slice(0, sameStateCount),
-          ...otherListings.slice(0, 10),
-        ].slice(0, 50);
-      }
-      
-      setListings(sortedListings);
-    } catch (error) {
-      console.error("Erro ao carregar anúncios:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchListings();
-  }, [selectedCategory, selectedState, selectedCity, searchQuery]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -128,7 +61,7 @@ const Index = () => {
     );
   }
 
-  if (listings.length === 0) {
+  if (recommendations.length === 0 && !loading) {
     return (
       <div className="min-h-screen bg-black pb-16">
         <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -249,7 +182,7 @@ const Index = () => {
         {viewMode === "feed" ? (
           <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:snap-y md:snap-mandatory" data-scroll-root="true" id="feed-scroll">
             <div className="md:flex md:flex-col md:items-center md:justify-start md:h-full">
-              {listings.map((listing) => (
+              {recommendations.map((listing) => (
                 <VehicleCard 
                   key={listing.id}
                   id={listing.id}
@@ -267,13 +200,14 @@ const Index = () => {
                   listingId={listing.id}
                   sellerName={listing.profiles?.name}
                   sellerAvatar={listing.profiles?.photo_url}
+                  recommendationReason={listing.recommendation_reason}
                 />
               ))}
             </div>
           </div>
         ) : (
           <div className="space-y-3 p-4 pt-[280px] md:pt-4">
-            {listings.map((listing) => (
+            {recommendations.map((listing) => (
               <VehicleCard 
                 key={listing.id}
                 id={listing.id}
@@ -291,6 +225,7 @@ const Index = () => {
                 listingId={listing.id}
                 sellerName={listing.profiles?.name}
                 sellerAvatar={listing.profiles?.photo_url}
+                recommendationReason={listing.recommendation_reason}
               />
             ))}
           </div>

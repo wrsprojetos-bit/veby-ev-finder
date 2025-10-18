@@ -8,6 +8,7 @@ import { useChat } from "@/hooks/useChat";
 import { useLikesAndFavorites } from "@/hooks/useLikesAndFavorites";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
+import { useViewTracking } from "@/hooks/useViewTracking";
 
 interface VehicleCardProps {
   id?: any;
@@ -25,6 +26,7 @@ interface VehicleCardProps {
   listingId?: string;
   sellerName?: string;
   sellerAvatar?: string;
+  recommendationReason?: string;
 }
 
 export const VehicleCard = ({
@@ -43,14 +45,19 @@ export const VehicleCard = ({
   listingId = "",
   sellerName = "Vendedor",
   sellerAvatar,
+  recommendationReason,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
   const { findOrCreateChat } = useChat();
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMuted, setIsMuted] = useState(false); // Começa com som ativado
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Rastrear visualização
+  useViewTracking(listingId, isVisible && variant === "feed");
 
   // Auto-play video when in view (TikTok style)
   useEffect(() => {
@@ -87,8 +94,10 @@ export const VehicleCard = ({
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting && entry.intersectionRatio > 0.75) {
+              setIsVisible(true);
               tryPlay();
             } else {
+              setIsVisible(false);
               tryPause();
             }
           });
@@ -246,6 +255,14 @@ export const VehicleCard = ({
                 </svg>
               )}
             </button>
+          )}
+          
+          {/* Selo de Recomendação */}
+          {recommendationReason && (
+            <div className="absolute top-20 left-4 bg-gradient-to-r from-[#00FF7F] to-[#00D4FF] text-black px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+              <span className="text-lg">🔥</span>
+              <span className="text-xs font-bold capitalize">{recommendationReason}</span>
+            </div>
           )}
         </div>
 
