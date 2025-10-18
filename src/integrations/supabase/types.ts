@@ -284,9 +284,11 @@ export type Database = {
       listings: {
         Row: {
           accepts_trade: boolean | null
+          approved: boolean | null
           brand_model: string
           category: string
           city: string | null
+          comments_count: number | null
           created_at: string | null
           description: string | null
           engagement_score: number | null
@@ -296,6 +298,7 @@ export type Database = {
           location: string
           preview_url: string | null
           price: number | null
+          ranking_score: number | null
           state: string | null
           status: string | null
           subcategory: string | null
@@ -310,9 +313,11 @@ export type Database = {
         }
         Insert: {
           accepts_trade?: boolean | null
+          approved?: boolean | null
           brand_model: string
           category: string
           city?: string | null
+          comments_count?: number | null
           created_at?: string | null
           description?: string | null
           engagement_score?: number | null
@@ -322,6 +327,7 @@ export type Database = {
           location: string
           preview_url?: string | null
           price?: number | null
+          ranking_score?: number | null
           state?: string | null
           status?: string | null
           subcategory?: string | null
@@ -336,9 +342,11 @@ export type Database = {
         }
         Update: {
           accepts_trade?: boolean | null
+          approved?: boolean | null
           brand_model?: string
           category?: string
           city?: string | null
+          comments_count?: number | null
           created_at?: string | null
           description?: string | null
           engagement_score?: number | null
@@ -348,6 +356,7 @@ export type Database = {
           location?: string
           preview_url?: string | null
           price?: number | null
+          ranking_score?: number | null
           state?: string | null
           status?: string | null
           subcategory?: string | null
@@ -679,6 +688,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_features: {
+        Row: {
+          ai_description: string | null
+          created_at: string | null
+          id: string
+          listing_id: string
+          objects_detected: Json | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_description?: string | null
+          created_at?: string | null
+          id?: string
+          listing_id: string
+          objects_detected?: Json | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_description?: string | null
+          created_at?: string | null
+          id?: string
+          listing_id?: string
+          objects_detected?: Json | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_features_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       view_history: {
         Row: {
