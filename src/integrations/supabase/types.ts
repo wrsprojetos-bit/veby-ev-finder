@@ -764,6 +764,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_personalized_feed: {
+        Args: { p_limit?: number; p_offset?: number; p_user_id: string }
+        Returns: {
+          listing_id: string
+          price: number
+          ranking_score: number
+          relevance_score: number
+          thumbnail_url: string
+          title: string
+          video_preview: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -774,6 +786,10 @@ export type Database = {
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      recalculate_listing_ranking: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
