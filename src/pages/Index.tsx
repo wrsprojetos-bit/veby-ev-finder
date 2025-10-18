@@ -204,24 +204,10 @@ const Index = () => {
         )}
       </aside>
 
-      {/* Mobile Header */}
+      {/* Mobile Header - Simplificado */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-black border-b border-white/10 z-30">
-        {/* Top Bar */}
         <div className="px-4 py-3 flex items-center justify-between">
           <img src={vebyLogo} alt="VEBY" className="h-8" />
-          
-          {/* Localização atual - clicável */}
-          {(location.city || location.state) && (
-            <button
-              onClick={() => setShowLocationModal(true)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-full text-xs text-white hover:bg-white/20 transition-colors"
-            >
-              <MapPin className="w-3 h-3 text-[#00FF7F]" />
-              <span className="max-w-[120px] truncate">
-                {location.city}, {location.state}
-              </span>
-            </button>
-          )}
           
           {!user && (
             <button 
@@ -231,96 +217,6 @@ const Index = () => {
               Entrar
             </button>
           )}
-        </div>
-
-        {/* Search Bar */}
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
-            <Input
-              placeholder="Buscar produtos, serviços ou imóveis..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50"
-            />
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
-          <Select value={selectedState || "all"} onValueChange={(value) => {
-            setSelectedState(value === "all" ? null : value);
-            setSelectedCity(null);
-          }}>
-            <SelectTrigger className="w-[120px] bg-white/10 border-white/20 text-white text-xs shrink-0">
-              <MapPin className="w-3 h-3 mr-1" />
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border-white/20">
-              <SelectItem value="all" className="text-white">Todos</SelectItem>
-              {BRAZILIAN_STATES.map((state) => (
-                <SelectItem key={state.uf} value={state.uf} className="text-white">{state.uf}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {selectedState && (
-            <Select value={selectedCity || "all"} onValueChange={(value) => setSelectedCity(value === "all" ? null : value)}>
-              <SelectTrigger className="w-[140px] bg-white/10 border-white/20 text-white text-xs shrink-0">
-                <SelectValue placeholder="Cidade" />
-              </SelectTrigger>
-              <SelectContent className="bg-black border-white/20">
-                <SelectItem value="all" className="text-white">Todas</SelectItem>
-                {cities.map((city) => (
-                  <SelectItem key={city} value={city} className="text-white">{city}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          <Button
-            variant={viewMode === "feed" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("feed")}
-            className={`shrink-0 ${viewMode === "feed" ? "bg-[#00FF7F] text-black" : "bg-white/10 text-white border-white/20"}`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-            className={`shrink-0 ${viewMode === "list" ? "bg-[#00FF7F] text-black" : "bg-white/10 text-white border-white/20"}`}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Categories Scroll */}
-        <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-          <button
-            onClick={() => setSelectedCategory("Todos")}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-              selectedCategory === "Todos"
-                ? "bg-[#00FF7F] text-black"
-                : "bg-white/10 text-white hover:bg-white/20"
-            }`}
-          >
-            Todos
-          </button>
-          {Object.keys(CATEGORIES).map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                selectedCategory === category
-                  ? "bg-[#00FF7F] text-black"
-                  : "bg-white/10 text-white hover:bg-white/20"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -349,7 +245,7 @@ const Index = () => {
       </header>
 
       {/* Content */}
-      <main className="pt-0 md:ml-64">
+      <main className="pt-14 md:ml-64">
         {viewMode === "feed" ? (
           <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:snap-y md:snap-mandatory" data-scroll-root="true" id="feed-scroll">
             <div className="md:flex md:flex-col md:items-center md:justify-start md:h-full">
