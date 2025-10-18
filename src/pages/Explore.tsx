@@ -91,8 +91,12 @@ const Explore = () => {
   };
 
   useEffect(() => {
-    fetchListings();
-  }, [selectedCategory, selectedState, selectedCity, searchQuery]);
+    const timer = setTimeout(() => {
+      fetchListings();
+    }, 300);
+    
+    return () => clearTimeout(timer);
+  }, [selectedCategory, selectedState, selectedCity, searchQuery, user]);
 
   if (loading) {
     return (

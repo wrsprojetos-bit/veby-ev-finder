@@ -110,7 +110,9 @@ export const useChat = () => {
   };
 
   useEffect(() => {
-    fetchChats();
+    if (user) {
+      fetchChats();
+    }
   }, [user]);
 
   const findOrCreateChat = async (listingId: string, sellerId: string) => {

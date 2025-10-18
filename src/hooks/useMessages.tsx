@@ -41,9 +41,12 @@ export const useMessages = (chatId: string | null) => {
   };
 
   useEffect(() => {
-    fetchMessages();
+    if (!chatId || !user) {
+      setLoading(false);
+      return;
+    }
 
-    if (!chatId) return;
+    fetchMessages();
 
     // Configurar realtime
     const channel = supabase
@@ -65,7 +68,7 @@ export const useMessages = (chatId: string | null) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [chatId]);
+  }, [chatId, user]);
 
   const sendMessage = async (content: string, mediaUrl?: string) => {
     if (!chatId || !user) {

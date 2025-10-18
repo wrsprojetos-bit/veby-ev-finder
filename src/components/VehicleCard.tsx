@@ -309,7 +309,6 @@ export const VehicleCard = ({
                 isFavorited ? "fill-yellow-400 text-yellow-400" : "text-white"
               )}
             />
-            <span className="text-xs font-semibold text-white drop-shadow-lg">182</span>
           </button>
 
           {/* Share Button */}
