@@ -306,7 +306,9 @@ export type Database = {
           thumbnail_url: string | null
           type: string
           user_id: string
+          video_duration: number | null
           video_preview: string | null
+          video_size: number | null
           video_thumbnail: string | null
           video_url: string | null
           views: number | null
@@ -335,7 +337,9 @@ export type Database = {
           thumbnail_url?: string | null
           type: string
           user_id: string
+          video_duration?: number | null
           video_preview?: string | null
+          video_size?: number | null
           video_thumbnail?: string | null
           video_url?: string | null
           views?: number | null
@@ -364,7 +368,9 @@ export type Database = {
           thumbnail_url?: string | null
           type?: string
           user_id?: string
+          video_duration?: number | null
           video_preview?: string | null
+          video_size?: number | null
           video_thumbnail?: string | null
           video_url?: string | null
           views?: number | null
@@ -628,6 +634,53 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      storage_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          error_message: string | null
+          id: string
+          listing_id: string | null
+          size_mb: number | null
+          status: string
+          user_id: string
+          video_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          listing_id?: string | null
+          size_mb?: number | null
+          status: string
+          user_id: string
+          video_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          error_message?: string | null
+          id?: string
+          listing_id?: string | null
+          size_mb?: number | null
+          status?: string
+          user_id?: string
+          video_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storage_logs_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {

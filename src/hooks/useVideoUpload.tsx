@@ -6,6 +6,8 @@ import {
   extractVideoThumbnail,
   generateVideoPreview,
   isValidVideo,
+  validateVideoDuration,
+  validateAspectRatio,
   generateUniqueFileName,
 } from "@/utils/videoProcessing";
 
@@ -31,27 +33,59 @@ export const useVideoUpload = () => {
     videoUrl: string;
     thumbnailUrl: string;
     previewUrl: string;
+    duration: number;
+    size: number;
   } | null> => {
     if (!user) {
       toast.error("Você precisa estar logado para fazer upload");
       return null;
     }
 
+    // 1. Validar formato e tamanho
     if (!isValidVideo(videoFile)) {
-      toast.error("Formato de vídeo inválido. Use MP4, MOV ou WebM");
+      toast.error("Formato inválido ou arquivo muito grande (máx. 100MB). Use MP4, MOV ou WebM");
+      return null;
+    }
+
+    // 2. Validar duração
+    toast.info("Validando vídeo...");
+    const durationCheck = await validateVideoDuration(videoFile);
+    if (!durationCheck.valid) {
+      toast.error(`Vídeo muito longo! Duração máxima: 60 segundos (seu vídeo: ${durationCheck.duration}s)`);
+      return null;
+    }
+
+    // 3. Validar aspect ratio 9:16
+    const aspectCheck = await validateAspectRatio(videoFile);
+    if (!aspectCheck.valid) {
+      toast.error("O vídeo precisa estar no formato vertical 9:16");
       return null;
     }
 
     setUploading(true);
     setProgress({ video: 0, thumbnail: 0, preview: 0 });
 
+    // Criar log de upload
+    const { data: logData } = await supabase
+      .from("storage_logs")
+      .insert([{
+        user_id: user.id,
+        listing_id: listingId,
+        video_id: listingId,
+        size_mb: parseFloat((videoFile.size / (1024 * 1024)).toFixed(2)),
+        duration_seconds: durationCheck.duration,
+        status: "uploading",
+      }])
+      .select()
+      .single();
+
     try {
-      // 1. Gerar thumbnail
+      // 4. Gerar thumbnail
       toast.info("Gerando thumbnail do vídeo...");
       const thumbnailBlob = await extractVideoThumbnail(videoFile, 1);
       setProgress((p) => ({ ...p, thumbnail: 100 }));
 
-      // 2. Gerar preview (simplificado - em produção usar server-side)
+      // 5. Gerar preview
       toast.info("Processando preview...");
       const previewBlob = await generateVideoPreview(videoFile);
       setProgress((p) => ({ ...p, preview: 50 }));
@@ -125,15 +159,41 @@ export const useVideoUpload = () => {
         .from("videos")
         .getPublicUrl(previewPath);
 
+      // Atualizar log de sucesso
+      if (logData) {
+        await supabase
+          .from("storage_logs")
+          .update({
+            status: "completed",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", logData.id);
+      }
+
       toast.success("Upload concluído com sucesso!");
 
       return {
         videoUrl: videoUrlData.publicUrl,
         thumbnailUrl: thumbUrlData.publicUrl,
         previewUrl: previewUrlData.publicUrl,
+        duration: durationCheck.duration,
+        size: videoFile.size,
       };
     } catch (error) {
       console.error("Erro no upload:", error);
+      
+      // Atualizar log de erro
+      if (logData) {
+        await supabase
+          .from("storage_logs")
+          .update({
+            status: "failed",
+            error_message: error instanceof Error ? error.message : "Erro desconhecido",
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", logData.id);
+      }
+      
       toast.error("Erro ao fazer upload do vídeo");
       return null;
     } finally {

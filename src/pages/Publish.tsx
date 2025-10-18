@@ -7,15 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Video, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { Video, X, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { toast } from "sonner";
 
 const Publish = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [uploading, setUploading] = useState(false);
+  const { uploadVideoWithAssets, uploading, progress } = useVideoUpload();
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
@@ -109,29 +110,9 @@ const Publish = () => {
       return;
     }
 
-    setUploading(true);
-
     try {
-      // Upload video to Supabase Storage
-      const fileExt = videoFile.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      
-      const { data: videoData, error: videoError } = await supabase.storage
-        .from('videos')
-        .upload(fileName, videoFile, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (videoError) throw videoError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('videos')
-        .getPublicUrl(fileName);
-
-      // Create listing
-      const { error: listingError } = await supabase
+      // Criar listing temporário para obter ID
+      const { data: tempListing, error: tempError } = await supabase
         .from('listings')
         .insert({
           user_id: user.id,
@@ -140,13 +121,39 @@ const Publish = () => {
           brand_model: `${formData.brand} ${formData.model}`.trim() || formData.title,
           price: parseFloat(formData.price),
           description: formData.description,
-          video_url: publicUrl,
           accepts_trade: formData.acceptsTrade,
           status: 'ativo',
-          location: 'São Paulo, SP', // You can add location field later
-        });
+          location: 'São Paulo, SP',
+        })
+        .select()
+        .single();
 
-      if (listingError) throw listingError;
+      if (tempError || !tempListing) {
+        throw new Error("Erro ao criar listing");
+      }
+
+      // Upload do vídeo com validações completas
+      const uploadResult = await uploadVideoWithAssets(videoFile, tempListing.id);
+
+      if (!uploadResult) {
+        // Se falhou, remover listing temporário
+        await supabase.from('listings').delete().eq('id', tempListing.id);
+        throw new Error("Erro no upload do vídeo");
+      }
+
+      // Atualizar listing com URLs dos vídeos
+      const { error: updateError } = await supabase
+        .from('listings')
+        .update({
+          video_url: uploadResult.videoUrl,
+          video_thumbnail: uploadResult.thumbnailUrl,
+          video_preview: uploadResult.previewUrl,
+          video_size: uploadResult.size,
+          video_duration: uploadResult.duration,
+        })
+        .eq('id', tempListing.id);
+
+      if (updateError) throw updateError;
 
       toast.success("Anúncio publicado com sucesso!");
       navigate("/");
@@ -154,8 +161,6 @@ const Publish = () => {
     } catch (error: any) {
       console.error('Error publishing:', error);
       toast.error(error.message || "Erro ao publicar anúncio");
-    } finally {
-      setUploading(false);
     }
   };
 

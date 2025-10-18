@@ -121,7 +121,67 @@ export const generateVideoPreview = async (
  */
 export const isValidVideo = (file: File): boolean => {
   const validTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
-  return validTypes.includes(file.type);
+  const maxSize = 100 * 1024 * 1024; // 100MB
+  return validTypes.includes(file.type) && file.size <= maxSize;
+};
+
+/**
+ * Valida duração do vídeo - máximo 60 segundos
+ */
+export const validateVideoDuration = (file: File): Promise<{ valid: boolean; duration: number }> => {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      const duration = Math.floor(video.duration);
+      resolve({
+        valid: duration <= 60,
+        duration
+      });
+    };
+    
+    video.onerror = () => {
+      resolve({ valid: false, duration: 0 });
+    };
+    
+    video.src = URL.createObjectURL(file);
+  });
+};
+
+/**
+ * Valida aspect ratio 9:16 (vertical)
+ */
+export const validateAspectRatio = (file: File): Promise<{ valid: boolean; width: number; height: number }> => {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    
+    video.onloadedmetadata = () => {
+      window.URL.revokeObjectURL(video.src);
+      const { videoWidth, videoHeight } = video;
+      
+      // Calcular aspect ratio (9:16 = 0.5625)
+      const aspectRatio = videoWidth / videoHeight;
+      const target = 9 / 16;
+      const tolerance = 0.1; // 10% de tolerância
+      
+      const valid = Math.abs(aspectRatio - target) <= tolerance;
+      
+      resolve({
+        valid,
+        width: videoWidth,
+        height: videoHeight
+      });
+    };
+    
+    video.onerror = () => {
+      resolve({ valid: false, width: 0, height: 0 });
+    };
+    
+    video.src = URL.createObjectURL(file);
+  });
 };
 
 /**
