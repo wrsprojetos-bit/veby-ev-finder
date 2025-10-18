@@ -251,14 +251,18 @@ export type Database = {
           accepts_trade: boolean | null
           brand_model: string
           category: string
+          city: string | null
           created_at: string | null
           description: string | null
           id: string
           images: string[] | null
           likes: number | null
           location: string
+          preview_url: string | null
           price: number | null
+          state: string | null
           status: string | null
+          subcategory: string | null
           thumbnail_url: string | null
           type: string
           user_id: string
@@ -269,14 +273,18 @@ export type Database = {
           accepts_trade?: boolean | null
           brand_model: string
           category: string
+          city?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           images?: string[] | null
           likes?: number | null
           location: string
+          preview_url?: string | null
           price?: number | null
+          state?: string | null
           status?: string | null
+          subcategory?: string | null
           thumbnail_url?: string | null
           type: string
           user_id: string
@@ -287,14 +295,18 @@ export type Database = {
           accepts_trade?: boolean | null
           brand_model?: string
           category?: string
+          city?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
           images?: string[] | null
           likes?: number | null
           location?: string
+          preview_url?: string | null
           price?: number | null
+          state?: string | null
           status?: string | null
+          subcategory?: string | null
           thumbnail_url?: string | null
           type?: string
           user_id?: string
