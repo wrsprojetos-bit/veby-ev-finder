@@ -190,8 +190,8 @@ const Index = () => {
 
         {/* Filters */}
         <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
-          <Select value={selectedState || ""} onValueChange={(value) => {
-            setSelectedState(value || null);
+          <Select value={selectedState || "all"} onValueChange={(value) => {
+            setSelectedState(value === "all" ? null : value);
             setSelectedCity(null);
           }}>
             <SelectTrigger className="w-[120px] bg-white/10 border-white/20 text-white text-xs shrink-0">
@@ -199,7 +199,7 @@ const Index = () => {
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent className="bg-black border-white/20">
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all" className="text-white">Todos</SelectItem>
               {BRAZILIAN_STATES.map((state) => (
                 <SelectItem key={state.uf} value={state.uf} className="text-white">{state.uf}</SelectItem>
               ))}
@@ -207,12 +207,12 @@ const Index = () => {
           </Select>
 
           {selectedState && (
-            <Select value={selectedCity || ""} onValueChange={(value) => setSelectedCity(value || null)}>
+            <Select value={selectedCity || "all"} onValueChange={(value) => setSelectedCity(value === "all" ? null : value)}>
               <SelectTrigger className="w-[140px] bg-white/10 border-white/20 text-white text-xs shrink-0">
                 <SelectValue placeholder="Cidade" />
               </SelectTrigger>
               <SelectContent className="bg-black border-white/20">
-                <SelectItem value="">Todas</SelectItem>
+                <SelectItem value="all" className="text-white">Todas</SelectItem>
                 {cities.map((city) => (
                   <SelectItem key={city} value={city} className="text-white">{city}</SelectItem>
                 ))}
