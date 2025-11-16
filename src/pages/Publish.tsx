@@ -118,6 +118,27 @@ const Publish = () => {
       return;
     }
 
+    // VALIDAÇÃO CLIENT-SIDE ANTES DO ZOD
+    const requiredFields = [
+      { field: formData.type, name: "Tipo de anúncio" },
+      { field: formData.tipo_veiculo, name: "Tipo de veículo" },
+      { field: formData.title, name: "Título" },
+      { field: formData.brand, name: "Marca" },
+      { field: formData.model, name: "Modelo" },
+      { field: formData.ano, name: "Ano" },
+      { field: formData.capacidade_bateria, name: "Capacidade da bateria" },
+      { field: formData.potencia_motor, name: "Potência do motor" },
+      { field: formData.estado_conservacao, name: "Estado de conservação" },
+      { field: formData.price, name: "Preço" },
+    ];
+
+    for (const { field, name } of requiredFields) {
+      if (!field || field === "") {
+        toast.error(`${name} é obrigatório`);
+        return;
+      }
+    }
+
     try {
       const { publishSchema } = await import("@/schemas/validation");
       const validationData = {
@@ -262,12 +283,15 @@ const Publish = () => {
     } catch (error: any) {
       console.error("Erro ao publicar anúncio:", error);
       
-      // Se for erro de validação do Zod, mostre o erro específico
+      // Se for erro de validação do Zod, mostre o erro específico do campo
       if (error?.issues && Array.isArray(error.issues)) {
         const firstError = error.issues[0];
-        toast.error(firstError.message || "Preencha todos os campos obrigatórios");
+        const fieldPath = firstError.path.join(".");
+        toast.error(`${fieldPath}: ${firstError.message}`);
+      } else if (error?.message) {
+        toast.error(error.message);
       } else {
-        toast.error(error?.message || "Erro ao criar listing. Preencha todos os campos obrigatórios.");
+        toast.error("Erro ao publicar anúncio. Verifique os campos.");
       }
     }
   };
@@ -341,12 +365,15 @@ const Publish = () => {
 
           {/* Tipo de Anúncio */}
           <div className="space-y-2">
-            <Label htmlFor="type" className="text-base font-semibold">Tipo de anúncio *</Label>
+            <Label htmlFor="type" className="text-base font-semibold">
+              Tipo de anúncio <span className="text-destructive">*</span>
+            </Label>
             <Select
               value={formData.type}
               onValueChange={(value) => setFormData({ ...formData, type: value })}
+              required
             >
-              <SelectTrigger>
+              <SelectTrigger className={!formData.type ? "border-destructive/50" : ""}>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
@@ -359,12 +386,15 @@ const Publish = () => {
 
           {/* Tipo de Veículo */}
           <div className="space-y-2">
-            <Label htmlFor="tipo_veiculo" className="text-base font-semibold">Tipo de veículo *</Label>
+            <Label htmlFor="tipo_veiculo" className="text-base font-semibold">
+              Tipo de veículo <span className="text-destructive">*</span>
+            </Label>
             <Select
               value={formData.tipo_veiculo}
               onValueChange={(value) => setFormData({ ...formData, tipo_veiculo: value })}
+              required
             >
-              <SelectTrigger>
+              <SelectTrigger className={!formData.tipo_veiculo ? "border-destructive/50" : ""}>
                 <SelectValue placeholder="Selecione o tipo de veículo" />
               </SelectTrigger>
               <SelectContent>
@@ -377,12 +407,15 @@ const Publish = () => {
 
           {/* Estado de Conservação */}
           <div className="space-y-2">
-            <Label htmlFor="estado_conservacao" className="text-base font-semibold">Estado de conservação *</Label>
+            <Label htmlFor="estado_conservacao" className="text-base font-semibold">
+              Estado de conservação <span className="text-destructive">*</span>
+            </Label>
             <Select
               value={formData.estado_conservacao}
               onValueChange={(value) => setFormData({ ...formData, estado_conservacao: value })}
+              required
             >
-              <SelectTrigger>
+              <SelectTrigger className={!formData.estado_conservacao ? "border-destructive/50" : ""}>
                 <SelectValue placeholder="Selecione o estado" />
               </SelectTrigger>
               <SelectContent>
@@ -395,33 +428,45 @@ const Publish = () => {
 
           {/* Título */}
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-base font-semibold">Título do anúncio *</Label>
+            <Label htmlFor="title" className="text-base font-semibold">
+              Título do anúncio <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Ex: Bike elétrica Sense 2023 como nova"
+              className={!formData.title ? "border-destructive/50" : ""}
+              required
             />
           </div>
 
           {/* Marca e Modelo */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="brand" className="text-base font-semibold">Marca *</Label>
+              <Label htmlFor="brand" className="text-base font-semibold">
+                Marca <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="brand"
                 value={formData.brand}
                 onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                 placeholder="Ex: Sense"
+                className={!formData.brand ? "border-destructive/50" : ""}
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="model" className="text-base font-semibold">Modelo *</Label>
+              <Label htmlFor="model" className="text-base font-semibold">
+                Modelo <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="model"
                 value={formData.model}
                 onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                 placeholder="Ex: E-Urban"
+                className={!formData.model ? "border-destructive/50" : ""}
+                required
               />
             </div>
           </div>
@@ -429,7 +474,9 @@ const Publish = () => {
           {/* Ano e Quilometragem */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="ano" className="text-base font-semibold">Ano *</Label>
+              <Label htmlFor="ano" className="text-base font-semibold">
+                Ano <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="ano"
                 type="number"
@@ -438,6 +485,8 @@ const Publish = () => {
                 placeholder="2023"
                 min="1990"
                 max={new Date().getFullYear() + 1}
+                className={!formData.ano ? "border-destructive/50" : ""}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -456,12 +505,16 @@ const Publish = () => {
           {/* Bateria e Autonomia */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="capacidade_bateria" className="text-base font-semibold">Capacidade da bateria *</Label>
+              <Label htmlFor="capacidade_bateria" className="text-base font-semibold">
+                Capacidade da bateria <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="capacidade_bateria"
                 value={formData.capacidade_bateria}
                 onChange={(e) => setFormData({ ...formData, capacidade_bateria: e.target.value })}
                 placeholder="48V 20Ah ou 75 kWh"
+                className={!formData.capacidade_bateria ? "border-destructive/50" : ""}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -480,12 +533,16 @@ const Publish = () => {
           {/* Potência e Tempo de Carga */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="potencia_motor" className="text-base font-semibold">Potência do motor *</Label>
+              <Label htmlFor="potencia_motor" className="text-base font-semibold">
+                Potência do motor <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="potencia_motor"
                 value={formData.potencia_motor}
                 onChange={(e) => setFormData({ ...formData, potencia_motor: e.target.value })}
                 placeholder="350W, 3kW ou 150cv"
+                className={!formData.potencia_motor ? "border-destructive/50" : ""}
+                required
               />
             </div>
             <div className="space-y-2">
@@ -501,7 +558,9 @@ const Publish = () => {
 
           {/* Preço */}
           <div className="space-y-2">
-            <Label htmlFor="price" className="text-base font-semibold">Preço (R$) *</Label>
+            <Label htmlFor="price" className="text-base font-semibold">
+              Preço (R$) <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="price"
               type="number"
@@ -510,6 +569,8 @@ const Publish = () => {
               placeholder="5000.00"
               step="0.01"
               min="0"
+              className={!formData.price ? "border-destructive/50" : ""}
+              required
             />
           </div>
 
@@ -629,7 +690,7 @@ const Publish = () => {
             {uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Publicando... {progress}%
+                Publicando... {Math.round((progress.video + progress.thumbnail + progress.preview) / 3)}%
               </>
             ) : (
               "Publicar Anúncio"
