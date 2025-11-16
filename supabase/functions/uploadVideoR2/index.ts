@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { S3Bucket } from "https://deno.land/x/s3@0.5.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,14 +13,71 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate user from JWT token
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Não autorizado. Token de autenticação necessário." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Não autorizado. Token inválido." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 }
+      );
+    }
+
     const formData = await req.formData();
     const videoFile = formData.get("video") as File;
-    const userId = formData.get("userId") as string;
     const listingId = formData.get("listingId") as string;
 
-    if (!videoFile || !userId || !listingId) {
+    if (!videoFile || !listingId) {
       return new Response(
-        JSON.stringify({ error: "Arquivo, userId e listingId são obrigatórios" }),
+        JSON.stringify({ error: "Arquivo e listingId são obrigatórios" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
+
+    // Verify user owns the listing
+    const { data: listing, error: listingError } = await supabaseClient
+      .from("listings")
+      .select("user_id")
+      .eq("id", listingId)
+      .single();
+
+    if (listingError || !listing) {
+      console.error("Listing not found:", listingError);
+      return new Response(
+        JSON.stringify({ error: "Anúncio não encontrado" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
+      );
+    }
+
+    if (listing.user_id !== user.id) {
+      console.error("User does not own listing:", { userId: user.id, listingUserId: listing.user_id });
+      return new Response(
+        JSON.stringify({ error: "Você não tem permissão para fazer upload neste anúncio" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
+      );
+    }
+
+    // Validate file type
+    const allowedMimeTypes = ["video/mp4", "video/quicktime", "video/webm"];
+    if (!allowedMimeTypes.includes(videoFile.type)) {
+      return new Response(
+        JSON.stringify({ error: "Tipo de arquivo inválido. Apenas MP4, MOV e WebM são permitidos." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
@@ -50,9 +108,9 @@ serve(async (req) => {
       endpointURL: `https://${s3Endpoint}`,
     });
 
-    // Gerar nome único para o arquivo
+    // Gerar nome único para o arquivo usando o user ID autenticado
     const timestamp = Date.now();
-    const fileName = `${userId}/${listingId}_${timestamp}.mp4`;
+    const fileName = `${user.id}/${listingId}_${timestamp}.mp4`;
 
     // Converter File para Uint8Array
     const arrayBuffer = await videoFile.arrayBuffer();

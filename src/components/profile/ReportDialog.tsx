@@ -33,6 +33,24 @@ export const ReportDialog = ({ open, onOpenChange, reportedUserId }: ReportDialo
       return;
     }
 
+    // Validate report data
+    try {
+      const { reportSchema } = await import("@/schemas/validation");
+      const validationResult = reportSchema.safeParse({
+        reason,
+        description: description.trim() || null,
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+    } catch (validationError: any) {
+      toast.error(validationError.message || "Erro de validação");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -45,7 +63,7 @@ export const ReportDialog = ({ open, onOpenChange, reportedUserId }: ReportDialo
         reporter_id: user.id,
         reported_user_id: reportedUserId,
         reason,
-        description: description || null,
+        description: description.trim() || null,
       });
 
       if (error) throw error;
