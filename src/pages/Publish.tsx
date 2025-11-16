@@ -22,6 +22,7 @@ const Publish = () => {
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
     type: "",
+    category: "",
     tipo_veiculo: "",
     title: "",
     price: "",
@@ -121,6 +122,7 @@ const Publish = () => {
     // VALIDAÇÃO CLIENT-SIDE ANTES DO ZOD
     const requiredFields = [
       { field: formData.type, name: "Tipo de anúncio" },
+      { field: formData.category, name: "Categoria" },
       { field: formData.tipo_veiculo, name: "Tipo de veículo" },
       { field: formData.title, name: "Título" },
       { field: formData.brand, name: "Marca" },
@@ -143,6 +145,7 @@ const Publish = () => {
       const { publishSchema } = await import("@/schemas/validation");
       const validationData = {
         type: (formData.type || "").toLowerCase().trim(),
+        category: formData.category,
         tipo_veiculo: formData.tipo_veiculo,
         title: formData.title,
         price: formData.price ? parseFloat(formData.price) : 0,
@@ -247,7 +250,7 @@ const Publish = () => {
           city: profile?.location_city || '',
           location: `${profile?.location_city || ''}, ${profile?.location_state || ''}`,
           status: "ativo",
-          category: "Veículos Elétricos",
+          category: formData.category,
           // NOVOS CAMPOS: latitude e longitude
           latitude: latitude,
           longitude: longitude,
@@ -380,6 +383,30 @@ const Publish = () => {
                 <SelectItem value="vendo">Vendo</SelectItem>
                 <SelectItem value="troco">Troco</SelectItem>
                 <SelectItem value="procuro">Procuro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Categoria */}
+          <div className="space-y-2">
+            <Label htmlFor="category" className="text-base font-semibold">
+              Categoria <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+              required
+            >
+              <SelectTrigger className={!formData.category ? "border-destructive/50" : ""}>
+                <SelectValue placeholder="Selecione a categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Bike">Bike</SelectItem>
+                <SelectItem value="Patinete">Patinete</SelectItem>
+                <SelectItem value="Scooter">Scooter</SelectItem>
+                <SelectItem value="Moto">Moto</SelectItem>
+                <SelectItem value="Carro">Carro</SelectItem>
+                <SelectItem value="Outros">Outros</SelectItem>
               </SelectContent>
             </Select>
           </div>
