@@ -38,6 +38,7 @@ export const ExploreGridCard = ({
         src={displayImage}
         alt={`${title} - capa do anúncio`}
         loading="lazy"
+        decoding="async"
         width="281"
         height="500"
         style={{ aspectRatio: '9/16' }}
