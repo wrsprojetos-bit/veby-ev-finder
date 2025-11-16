@@ -112,7 +112,7 @@ export const useInfiniteListings = ({
     }
   }, [selectedCategory, selectedState, selectedCity, searchQuery, userId, onCategoryView, onSearchAdd]);
 
-  // Detecta mudança de filtros e reseta (incluindo montagem inicial)
+  // Detecta mudança de filtros e também garante carregamento inicial
   useEffect(() => {
     const currentFilters = {
       selectedCategory,
@@ -128,14 +128,20 @@ export const useInfiniteListings = ({
       setPage(0);
       setListings([]);
       setHasMore(true);
-      
       const timer = setTimeout(() => {
         fetchListings(0, true);
-      }, 300);
-      
+      }, 200);
       return () => clearTimeout(timer);
     }
-  }, [selectedCategory, selectedState, selectedCity, searchQuery, fetchListings]);
+
+    // Carregamento inicial quando ainda não há itens
+    if (listings.length === 0) {
+      const timer = setTimeout(() => {
+        fetchListings(0, true);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedCategory, selectedState, selectedCity, searchQuery, fetchListings, listings.length]);
 
   const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore || loading) return;
@@ -145,13 +151,6 @@ export const useInfiniteListings = ({
     fetchListings(nextPage, false);
   }, [page, isLoadingMore, hasMore, loading, fetchListings]);
 
-  // Carregamento inicial garantido na montagem
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchListings(0, true);
-    }, 200);
-    return () => clearTimeout(timer);
-  }, [fetchListings]);
 
   return {
     listings,
