@@ -18,6 +18,8 @@ export const InfiniteScrollTrigger = ({ onLoadMore, isLoading, hasMore }: Infini
       (entries) => {
         const [entry] = entries;
         if (entry.isIntersecting) {
+          // Evita chamadas duplicadas rápidas enquanto o carregamento está em progresso
+          observer.unobserve(trigger);
           onLoadMore();
         }
       },
