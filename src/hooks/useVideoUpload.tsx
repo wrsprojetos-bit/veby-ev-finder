@@ -80,44 +80,39 @@ export const useVideoUpload = () => {
       .single();
 
     try {
-      // 4. Gerar thumbnail
-      toast.info("Gerando thumbnail do vídeo...");
+      // 1. Gerar thumbnail
+      toast.info("Gerando thumbnail...");
       const thumbnailBlob = await extractVideoThumbnail(videoFile, 1);
-      setProgress((p) => ({ ...p, thumbnail: 100 }));
+      setProgress((p) => ({ ...p, thumbnail: 50 }));
 
-      // 5. Gerar preview
-      toast.info("Processando preview...");
+      // 2. Gerar preview
+      toast.info("Gerando preview...");
       const previewBlob = await generateVideoPreview(videoFile);
       setProgress((p) => ({ ...p, preview: 50 }));
 
-      // 3. Upload do vídeo original
-      toast.info("Enviando vídeo...");
-      const videoPath = generateUniqueFileName(
-        user.id,
-        listingId,
-        "video",
-        "mp4"
+      // 3. Upload do vídeo para R2 via Edge Function
+      toast.info("Enviando vídeo para R2...");
+      const formData = new FormData();
+      formData.append("video", videoFile);
+      formData.append("userId", user.id);
+      formData.append("listingId", listingId);
+
+      const { data: r2Response, error: r2Error } = await supabase.functions.invoke(
+        "uploadVideoR2",
+        {
+          body: formData,
+        }
       );
 
-      const { data: videoData, error: videoError } = await supabase.storage
-        .from("videos")
-        .upload(videoPath, videoFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      if (r2Error || !r2Response?.success) {
+        throw new Error(r2Response?.error || "Erro ao fazer upload para R2");
+      }
 
-      if (videoError) throw videoError;
       setProgress((p) => ({ ...p, video: 100 }));
 
-      // 4. Upload da thumbnail
-      const thumbPath = generateUniqueFileName(
-        user.id,
-        listingId,
-        "thumb",
-        "jpg"
-      );
-
-      const { data: thumbData, error: thumbError } = await supabase.storage
+      // 4. Upload da thumbnail para Supabase Storage
+      const thumbPath = generateUniqueFileName(user.id, listingId, "thumb", "jpg");
+      const { error: thumbError } = await supabase.storage
         .from("videos")
         .upload(thumbPath, thumbnailBlob, {
           cacheControl: "3600",
@@ -126,16 +121,11 @@ export const useVideoUpload = () => {
         });
 
       if (thumbError) throw thumbError;
+      setProgress((p) => ({ ...p, thumbnail: 100 }));
 
-      // 5. Upload do preview
-      const previewPath = generateUniqueFileName(
-        user.id,
-        listingId,
-        "preview",
-        "mp4"
-      );
-
-      const { data: previewData, error: previewError } = await supabase.storage
+      // 5. Upload do preview para Supabase Storage
+      const previewPath = generateUniqueFileName(user.id, listingId, "preview", "mp4");
+      const { error: previewError } = await supabase.storage
         .from("videos")
         .upload(previewPath, previewBlob, {
           cacheControl: "3600",
@@ -147,10 +137,6 @@ export const useVideoUpload = () => {
       setProgress((p) => ({ ...p, preview: 100 }));
 
       // 6. Obter URLs públicas
-      const { data: videoUrlData } = supabase.storage
-        .from("videos")
-        .getPublicUrl(videoPath);
-
       const { data: thumbUrlData } = supabase.storage
         .from("videos")
         .getPublicUrl(thumbPath);
@@ -173,7 +159,7 @@ export const useVideoUpload = () => {
       toast.success("Upload concluído com sucesso!");
 
       return {
-        videoUrl: videoUrlData.publicUrl,
+        videoUrl: r2Response.video_url,
         thumbnailUrl: thumbUrlData.publicUrl,
         previewUrl: previewUrlData.publicUrl,
         duration: durationCheck.duration,
