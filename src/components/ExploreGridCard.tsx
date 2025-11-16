@@ -31,11 +31,16 @@ export const ExploreGridCard = ({
     <div
       onClick={handleClick}
       className="relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer group"
+      style={{ aspectRatio: '9/16' }}
     >
+      {/* Capa estática */}
       <img
         src={displayImage}
         alt={`${title} - capa do anúncio`}
         loading="lazy"
+        width="281"
+        height="500"
+        style={{ aspectRatio: '9/16' }}
         className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
       />
 
