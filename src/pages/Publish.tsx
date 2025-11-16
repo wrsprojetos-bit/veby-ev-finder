@@ -285,6 +285,9 @@ const Publish = () => {
 
       if (updateError) throw updateError;
 
+      toast.success("Anúncio publicado com sucesso!");
+      navigate("/");
+    } catch (error) {
       const code = (error && (error.code || error.status || error.name)) || undefined;
       const msg: string = error?.message || "";
       const details: string = error?.details || "";
@@ -317,6 +320,8 @@ const Publish = () => {
       }
 
       toast.error(`Não foi possível publicar o anúncio. Motivo: ${friendly}`);
+    }
+  };
 
   if (loading) {
     return (
