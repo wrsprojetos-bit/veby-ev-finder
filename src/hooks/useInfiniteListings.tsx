@@ -140,6 +140,14 @@ export const useInfiniteListings = ({
     fetchListings(nextPage, false);
   }, [page, isLoadingMore, hasMore, loading, fetchListings]);
 
+  // Carregamento inicial garantido na montagem
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchListings(0, true);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [fetchListings]);
+
   return {
     listings,
     loading,
