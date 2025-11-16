@@ -38,8 +38,8 @@ serve(async (req) => {
     const bucketName = Deno.env.get("R2_BUCKET_NAME") || "veby-videos";
     const endpoint = Deno.env.get("R2_ENDPOINT") || "";
 
-    // Remover https:// do endpoint
-    const cleanEndpoint = endpoint.replace("https://", "").replace("http://", "");
+    // Para o S3 client, precisamos do endpoint sem o protocolo
+    const s3Endpoint = endpoint.replace("https://", "").replace("http://", "");
 
     // Configurar bucket S3 (R2 é compatível com S3)
     const bucket = new S3Bucket({
@@ -47,7 +47,7 @@ serve(async (req) => {
       secretKey: secretAccessKey,
       bucket: bucketName,
       region: "auto",
-      endpointURL: `https://${cleanEndpoint}`,
+      endpointURL: `https://${s3Endpoint}`,
     });
 
     // Gerar nome único para o arquivo
@@ -65,8 +65,8 @@ serve(async (req) => {
       contentType: "video/mp4",
     });
 
-    // URL pública do vídeo
-    const publicUrl = `https://${cleanEndpoint}/${bucketName}/${fileName}`;
+    // URL pública do vídeo usando o endpoint público configurado
+    const publicUrl = `${endpoint}/${bucketName}/${fileName}`;
 
     console.log("Upload concluído:", { fileName, size: videoFile.size, publicUrl });
 
