@@ -261,7 +261,14 @@ const Publish = () => {
       navigate("/");
     } catch (error: any) {
       console.error("Erro ao publicar anúncio:", error);
-      toast.error(error?.message || "Erro ao publicar anúncio");
+      
+      // Se for erro de validação do Zod, mostre o erro específico
+      if (error?.issues && Array.isArray(error.issues)) {
+        const firstError = error.issues[0];
+        toast.error(firstError.message || "Preencha todos os campos obrigatórios");
+      } else {
+        toast.error(error?.message || "Erro ao criar listing. Preencha todos os campos obrigatórios.");
+      }
     }
   };
 
