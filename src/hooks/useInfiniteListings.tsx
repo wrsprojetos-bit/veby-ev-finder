@@ -60,7 +60,8 @@ export const useInfiniteListings = ({
             verified
           )
         `)
-        .eq("status", "ativo");
+        .eq("status", "ativo")
+        .eq("approved", true);
 
       // Filtro por tipo de veículo
       if (selectedCategory !== "Todos") {

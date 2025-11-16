@@ -195,7 +195,7 @@ const Index = () => {
                   title={listing.brand_model}
                   price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
                   location={`${listing.city || ''}, ${listing.state || ''}`}
-                  distance="2.5 km"
+                  distance={listing.distance_km ? `${listing.distance_km.toFixed(1)} km` : "--"}
                   views={listing.views}
                   image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                   videoUrl={listing.video_url}
@@ -227,7 +227,7 @@ const Index = () => {
                   title={listing.brand_model}
                   price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
                   location={`${listing.city || ''}, ${listing.state || ''}`}
-                  distance="2.5 km"
+                  distance={listing.distance_km ? `${listing.distance_km.toFixed(1)} km` : "--"}
                   views={listing.views}
                   image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                   videoUrl={listing.video_url}

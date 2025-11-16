@@ -47,23 +47,28 @@ export const useProximityFeed = ({
         
         // Se GPS falhar, usar cidade/estado do perfil
         if (userCity && userState) {
-          const geocoded = await geocodeAddress(userCity, userState);
-          if (geocoded) {
-            setUserLocation({ lat: geocoded.latitude, lng: geocoded.longitude });
-            console.log("📍 Feed: Geocoding aproximado do perfil", geocoded);
-          } else {
-            console.log("❌ Geocoding falhou, usando feed global");
+          try {
+            const geocoded = await geocodeAddress(userCity, userState);
+            if (geocoded) {
+              setUserLocation({ lat: geocoded.latitude, lng: geocoded.longitude });
+              console.log("📍 Feed: Geocoding aproximado do perfil", geocoded);
+            } else {
+              console.log("⚠️ Geocoding falhou, usando feed global");
+              setUserLocation(null);
+            }
+          } catch (geocodeError) {
+            console.error("❌ Erro no geocoding:", geocodeError);
             setUserLocation(null);
           }
         } else {
-          console.log("❌ Sem localização disponível, usando feed global");
+          console.log("ℹ️ Sem localização de perfil, usando feed global");
           setUserLocation(null);
         }
       }
     };
 
     getLocationAtFeedStart();
-  }, [enabled, userCity, userState]);
+  }, [enabled, userCity, userState, getCurrentPosition, geocodeAddress]);
 
   // PASSO 4: Buscar anúncios com expansão progressiva de raio
   const fetchWithProgressiveRadius = useCallback(async (pageNum: number, isReset: boolean = false) => {
@@ -117,7 +122,7 @@ export const useProximityFeed = ({
   const fetchByDistance = async (radiusKm: number, limit: number, offset: number) => {
     if (!userLocation) return { data: [], count: 0 };
 
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .rpc('get_listings_by_distance', {
         user_lat: userLocation.lat,
         user_lng: userLocation.lng,
@@ -125,6 +130,15 @@ export const useProximityFeed = ({
         p_limit: limit,
         p_offset: offset
       })
+      .select(`
+        *,
+        profiles:user_id (
+          name,
+          photo_url,
+          location,
+          verified
+        )
+      `)
       .returns<Listing[]>();
 
     if (error) {
@@ -132,6 +146,7 @@ export const useProximityFeed = ({
       return { data: [], count: 0 };
     }
 
+    console.log(`✅ Encontrados ${data?.length || 0} anúncios dentro de ${radiusKm}km`);
     return { data: data || [], count: data?.length || 0 };
   };
 
