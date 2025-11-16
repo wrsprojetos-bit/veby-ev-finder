@@ -62,9 +62,9 @@ export const useInfiniteListings = ({
         `)
         .eq("status", "ativo");
 
-      // Filtro por categoria
+      // Filtro por tipo de veículo
       if (selectedCategory !== "Todos") {
-        query = query.eq("category", selectedCategory);
+        query = query.eq("tipo_veiculo", selectedCategory);
         if (userId && onCategoryView) onCategoryView(selectedCategory);
       }
 
