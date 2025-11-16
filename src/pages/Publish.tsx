@@ -142,7 +142,7 @@ const Publish = () => {
     try {
       const { publishSchema } = await import("@/schemas/validation");
       const validationData = {
-        type: formData.type,
+        type: (formData.type || "").toLowerCase().trim(),
         tipo_veiculo: formData.tipo_veiculo,
         title: formData.title,
         price: formData.price ? parseFloat(formData.price) : 0,
