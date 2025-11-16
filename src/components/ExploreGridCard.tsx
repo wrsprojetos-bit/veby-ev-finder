@@ -1,4 +1,3 @@
-import { useState, useRef, useEffect } from "react";
 import { Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,59 +23,8 @@ export const ExploreGridCard = ({
   views,
 }: ExploreGridCardProps) => {
   const navigate = useNavigate();
-  const [showPreview, setShowPreview] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
-  // Intersection Observer para lazy loading e autoplay do preview
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsInView(true);
-            // Após 300ms no viewport, ativa o preview
-            const timer = setTimeout(() => {
-              if (entry.isIntersecting) {
-                setShowPreview(true);
-              }
-            }, 300);
-            return () => clearTimeout(timer);
-          } else {
-            setIsInView(false);
-            setShowPreview(false);
-          }
-        });
-      },
-      {
-        threshold: 0.5, // 50% visível
-        rootMargin: "50px", // Pré-carrega quando estiver próximo
-      }
-    );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-
-    return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
-      }
-    };
-  }, []);
-
-  // Autoplay do preview quando ativo
-  useEffect(() => {
-    if (showPreview && videoRef.current) {
-      videoRef.current.play().catch(() => {
-        // Silenciosamente ignora erro de autoplay
-      });
-    } else if (!showPreview && videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.currentTime = 0;
-    }
-  }, [showPreview]);
 
   const handleClick = () => {
     navigate(`/?listing=${id}`);
@@ -88,19 +36,15 @@ export const ExploreGridCard = ({
 
   return (
     <div
-      ref={containerRef}
       onClick={handleClick}
       className="relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer group"
     >
-      {/* Thumbnail estática */}
-      {!showPreview && (
-        <img
-          src={displayImage}
-          alt={title}
-          loading="lazy"
-          className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
-        />
-      )}
+      <img
+        src={displayImage}
+        alt={`${title} - capa do anúncio`}
+        loading="lazy"
+        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+      />
 
       {/* Preview animado (3s loop) */}
       {showPreview && preview && (
