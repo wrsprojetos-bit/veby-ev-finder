@@ -171,7 +171,7 @@ const Publish = () => {
         .from("profiles")
         .select("location_state, location_city")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       // PASSO 2: Capturar localização GPS ao criar anúncio
       let latitude: number | null = null;
