@@ -57,13 +57,33 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
-        email,
+      // Validate input
+      const { signUpSchema } = await import("@/schemas/validation");
+      const validationResult = signUpSchema.safeParse({
+        name: name.trim(),
+        location: location.trim(),
+        email: email.trim().toLowerCase(),
         password,
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          variant: "destructive",
+          title: "Erro de validação",
+          description: firstError.message,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.signUp({
+        email: validationResult.data.email,
+        password: validationResult.data.password,
         options: {
           data: {
-            name,
-            location,
+            name: validationResult.data.name,
+            location: validationResult.data.location,
           },
           emailRedirectTo: `${window.location.origin}/`,
         },
@@ -94,9 +114,27 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+      // Validate input
+      const { signInSchema } = await import("@/schemas/validation");
+      const validationResult = signInSchema.safeParse({
+        email: email.trim().toLowerCase(),
         password,
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast({
+          variant: "destructive",
+          title: "Erro de validação",
+          description: firstError.message,
+        });
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: validationResult.data.email,
+        password: validationResult.data.password,
       });
 
       if (error) throw error;

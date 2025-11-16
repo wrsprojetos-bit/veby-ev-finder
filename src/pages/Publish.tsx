@@ -105,8 +105,27 @@ const Publish = () => {
       return;
     }
 
-    if (!formData.category || !formData.title || !formData.price) {
-      toast.error("Preencha todos os campos obrigatórios");
+    // Validate form data
+    try {
+      const { publishSchema } = await import("@/schemas/validation");
+      const validationResult = publishSchema.safeParse({
+        type: formData.type,
+        category: formData.category,
+        title: formData.title,
+        price: formData.price ? parseFloat(formData.price) : null,
+        brand: formData.brand,
+        model: formData.model,
+        description: formData.description,
+        acceptsTrade: formData.acceptsTrade,
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+    } catch (validationError: any) {
+      toast.error(validationError.message || "Erro de validação");
       return;
     }
 

@@ -56,6 +56,33 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate profile data
+    try {
+      const { profileUpdateSchema } = await import("@/schemas/validation");
+      const validationResult = profileUpdateSchema.safeParse({
+        name: formData.name,
+        location: formData.location || null,
+        bio: formData.bio || null,
+        photo_url: formData.photo_url || null,
+        instagram_url: formData.instagram_url || null,
+        whatsapp: formData.whatsapp || null,
+        site_url: formData.site_url || null,
+        cnpj: formData.cnpj || null,
+        logo_url: formData.logo_url || null,
+        endereco: formData.endereco || null,
+        horario_funcionamento: formData.horario_funcionamento || null,
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+    } catch (validationError: any) {
+      toast.error(validationError.message || "Erro de validação");
+      return;
+    }
+
     if (accountType === 'empresa' && !formData.cnpj) {
       toast.error("CNPJ é obrigatório para empresas");
       return;

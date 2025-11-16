@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 const Chat = () => {
   const { user } = useAuth();
@@ -41,9 +42,25 @@ const Chat = () => {
   }, [messages]);
 
   const handleSendMessage = async () => {
-    if (message.trim() && selectedChatId) {
-      await sendMessage(message.trim());
+    if (!message.trim() || !selectedChatId) return;
+
+    // Validate message
+    try {
+      const { messageSchema } = await import("@/schemas/validation");
+      const validationResult = messageSchema.safeParse({
+        content: message.trim(),
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.errors[0];
+        toast.error(firstError.message);
+        return;
+      }
+
+      await sendMessage(validationResult.data.content);
       setMessage("");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao enviar mensagem");
     }
   };
 
