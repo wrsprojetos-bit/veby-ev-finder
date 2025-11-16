@@ -836,14 +836,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      recalculate_listing_ranking: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      recalculate_listing_ranking: { Args: never; Returns: undefined }
     }
     Enums: {
       account_type: "pessoa_fisica" | "empresa"
