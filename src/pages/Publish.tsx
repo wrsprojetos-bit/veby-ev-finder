@@ -221,40 +221,44 @@ const Publish = () => {
         }
       }
 
+      // Monta payload do insert e registra para diagnóstico
+      const payload = {
+        user_id: user.id,
+        type: validatedData.type,
+        tipo_veiculo: validatedData.tipo_veiculo,
+        brand_model: `${validatedData.brand} ${validatedData.model}`.trim(),
+        marca: validatedData.brand,
+        modelo: validatedData.model,
+        ano: validatedData.ano,
+        quilometragem_km: validatedData.quilometragem_km,
+        capacidade_bateria: validatedData.capacidade_bateria,
+        autonomia_km: validatedData.autonomia_km,
+        potencia_motor: validatedData.potencia_motor,
+        tempo_carga_horas: validatedData.tempo_carga_horas,
+        estado_conservacao: validatedData.estado_conservacao,
+        price: validatedData.price,
+        description: validatedData.description,
+        accepts_trade: validatedData.acceptsTrade,
+        documentacao_em_dia: validatedData.documentacao_em_dia,
+        licenciado: validatedData.licenciado,
+        unico_dono: validatedData.unico_dono,
+        bairro: validatedData.bairro,
+        inclui_carregador: validatedData.inclui_carregador,
+        inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
+        state: profile?.location_state || '',
+        city: profile?.location_city || '',
+        location: `${profile?.location_city || ''}, ${profile?.location_state || ''}`.trim(),
+        status: "ativo",
+        category: formData.category,
+        latitude: latitude,
+        longitude: longitude,
+      } as const;
+
+      console.debug("🧪 Insert payload (listings)", payload);
+
       const { data: listing, error: listingError } = await supabase
         .from("listings")
-        .insert({
-          user_id: user.id,
-          type: validatedData.type,
-          tipo_veiculo: validatedData.tipo_veiculo,
-          brand_model: `${validatedData.brand} ${validatedData.model}`,
-          marca: validatedData.brand,
-          modelo: validatedData.model,
-          ano: validatedData.ano,
-          quilometragem_km: validatedData.quilometragem_km,
-          capacidade_bateria: validatedData.capacidade_bateria,
-          autonomia_km: validatedData.autonomia_km,
-          potencia_motor: validatedData.potencia_motor,
-          tempo_carga_horas: validatedData.tempo_carga_horas,
-          estado_conservacao: validatedData.estado_conservacao,
-          price: validatedData.price,
-          description: validatedData.description,
-          accepts_trade: validatedData.acceptsTrade,
-          documentacao_em_dia: validatedData.documentacao_em_dia,
-          licenciado: validatedData.licenciado,
-          unico_dono: validatedData.unico_dono,
-          bairro: validatedData.bairro,
-          inclui_carregador: validatedData.inclui_carregador,
-          inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
-          state: profile?.location_state || '',
-          city: profile?.location_city || '',
-          location: `${profile?.location_city || ''}, ${profile?.location_state || ''}`,
-          status: "ativo",
-          category: formData.category,
-          // NOVOS CAMPOS: latitude e longitude
-          latitude: latitude,
-          longitude: longitude,
-        })
+        .insert(payload)
         .select()
         .single();
 
@@ -281,23 +285,38 @@ const Publish = () => {
 
       if (updateError) throw updateError;
 
-      toast.success("Anúncio publicado com sucesso!");
-      navigate("/");
-    } catch (error: any) {
-      console.error("Erro ao publicar anúncio:", error);
-      
-      // Se for erro de validação do Zod, mostre o erro específico do campo
-      if (error?.issues && Array.isArray(error.issues)) {
-        const firstError = error.issues[0];
-        const fieldPath = firstError.path.join(".");
-        toast.error(`${fieldPath}: ${firstError.message}`);
-      } else if (error?.message) {
-        toast.error(error.message);
+      const code = (error && (error.code || error.status || error.name)) || undefined;
+      const msg: string = error?.message || "";
+      const details: string = error?.details || "";
+      const hint: string = error?.hint || "";
+      console.error("🔴 Erro detalhado do backend (listings.insert)", { code, msg, details, hint, error });
+
+      let friendly = "";
+      const all = `${msg} ${details} ${hint}`.toLowerCase();
+
+      if (code === '23514' || all.includes('check constraint')) {
+        if (all.includes('listings_type_check')) {
+          friendly = 'Tipo de anúncio inválido. Selecione Vendo, Troco ou Procuro.';
+        } else if (all.includes('status')) {
+          friendly = 'Status inválido. Tente novamente.';
+        } else {
+          friendly = 'Algum campo não atende às regras obrigatórias.';
+        }
+      } else if (all.includes('row-level security') || all.includes('rls')) {
+        friendly = 'Erro de permissão ao salvar anúncio. Faça login novamente.';
+      } else if (code === '23502' || all.includes('not-null constraint')) {
+        const m = msg.match(/column \"([^\"]+)\"/i);
+        const col = m?.[1] || 'campo obrigatório';
+        friendly = `Preencha o campo ${col}.`;
+      } else if (code === '22P02' || all.includes('invalid input syntax')) {
+        friendly = 'Tipo de dado inválido. Verifique números (Ano, Preço, Autonomia).';
+      } else if (msg) {
+        friendly = msg;
       } else {
-        toast.error("Erro ao publicar anúncio. Verifique os campos.");
+        friendly = 'Erro ao publicar anúncio. Verifique os campos.';
       }
-    }
-  };
+
+      toast.error(`Não foi possível publicar o anúncio. Motivo: ${friendly}`);
 
   if (loading) {
     return (
