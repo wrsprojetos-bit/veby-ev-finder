@@ -3,19 +3,13 @@ import vebyLogo from "@/assets/veby-logo-new.png";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
-import { LayoutGrid, List, LogIn, Search, MapPin } from "lucide-react";
+import { LayoutGrid, List, LogIn, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { CATEGORIES, BRAZILIAN_STATES } from "@/data/categories";
-import { useCities } from "@/hooks/useCities";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { useRecommendations } from "@/hooks/useRecommendations";
 import { LocationSelector } from "@/components/LocationSelector";
-import { toast } from "sonner";
+import { useInfiniteRecommendations } from "@/hooks/useInfiniteRecommendations";
+import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
 
 const Index = () => {
   const [viewMode, setViewMode] = useState<"feed" | "list">("feed");
@@ -25,12 +19,15 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location } = useGeolocation();
-  const { trackCategoryView, addRecentSearch } = useUserPreferences();
   
-  // Hook de recomendações inteligentes
+  // Hook de recomendações inteligentes com scroll infinito
   const userCity = selectedCity || location.city;
   const userState = selectedState || location.state;
-  const { recommendations, loading } = useRecommendations(userCity, userState);
+  const { recommendations, loading, isLoadingMore, hasMore, loadMore } = useInfiniteRecommendations(
+    userCity,
+    userState,
+    user?.id
+  );
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
@@ -203,32 +200,44 @@ const Index = () => {
                   recommendationReason={listing.recommendation_reason}
                 />
               ))}
+              <InfiniteScrollTrigger 
+                onLoadMore={loadMore}
+                isLoading={isLoadingMore}
+                hasMore={hasMore}
+              />
             </div>
           </div>
         ) : (
-          <div className="space-y-3 p-4 pt-[280px] md:pt-4">
-            {recommendations.map((listing) => (
-              <VehicleCard 
-                key={listing.id}
-                id={listing.id}
-                title={listing.brand_model}
-                price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                location={`${listing.city || ''}, ${listing.state || ''}`}
-                distance="2.5 km"
-                views={listing.views}
-                image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-                videoUrl={listing.video_url}
-                category={listing.category}
-                acceptsTrade={listing.accepts_trade}
-                variant="list"
-                sellerId={listing.user_id}
-                listingId={listing.id}
-                sellerName={listing.profiles?.name}
-                sellerAvatar={listing.profiles?.photo_url}
-                recommendationReason={listing.recommendation_reason}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-3 p-4 pt-[280px] md:pt-4">
+              {recommendations.map((listing) => (
+                <VehicleCard 
+                  key={listing.id}
+                  id={listing.id}
+                  title={listing.brand_model}
+                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                  location={`${listing.city || ''}, ${listing.state || ''}`}
+                  distance="2.5 km"
+                  views={listing.views}
+                  image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                  videoUrl={listing.video_url}
+                  category={listing.category}
+                  acceptsTrade={listing.accepts_trade}
+                  variant="list"
+                  sellerId={listing.user_id}
+                  listingId={listing.id}
+                  sellerName={listing.profiles?.name}
+                  sellerAvatar={listing.profiles?.photo_url}
+                  recommendationReason={listing.recommendation_reason}
+                />
+              ))}
+            </div>
+            <InfiniteScrollTrigger 
+              onLoadMore={loadMore}
+              isLoading={isLoadingMore}
+              hasMore={hasMore}
+            />
+          </>
         )}
       </main>
 
