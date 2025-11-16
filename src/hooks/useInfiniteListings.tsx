@@ -35,27 +35,7 @@ export const useInfiniteListings = ({
     searchQuery,
   });
 
-  // Detecta mudança de filtros e reseta
-  useEffect(() => {
-    const currentFilters = {
-      selectedCategory,
-      selectedState,
-      selectedCity,
-      searchQuery,
-    };
-
-    const filtersChanged = JSON.stringify(filtersRef.current) !== JSON.stringify(currentFilters);
-
-    if (filtersChanged) {
-      filtersRef.current = currentFilters;
-      setPage(0);
-      setListings([]);
-      setHasMore(true);
-      fetchListings(0, true);
-    }
-  }, [selectedCategory, selectedState, selectedCity, searchQuery]);
-
-  const fetchListings = async (pageNum: number, isReset: boolean = false) => {
+  const fetchListings = useCallback(async (pageNum: number, isReset: boolean = false) => {
     try {
       if (isReset) {
         setLoading(true);
@@ -125,7 +105,32 @@ export const useInfiniteListings = ({
       setLoading(false);
       setIsLoadingMore(false);
     }
-  };
+  }, [selectedCategory, selectedState, selectedCity, searchQuery, userId, onCategoryView, onSearchAdd]);
+
+  // Detecta mudança de filtros e reseta (incluindo montagem inicial)
+  useEffect(() => {
+    const currentFilters = {
+      selectedCategory,
+      selectedState,
+      selectedCity,
+      searchQuery,
+    };
+
+    const filtersChanged = JSON.stringify(filtersRef.current) !== JSON.stringify(currentFilters);
+
+    if (filtersChanged) {
+      filtersRef.current = currentFilters;
+      setPage(0);
+      setListings([]);
+      setHasMore(true);
+      
+      const timer = setTimeout(() => {
+        fetchListings(0, true);
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [selectedCategory, selectedState, selectedCity, searchQuery, fetchListings]);
 
   const loadMore = useCallback(() => {
     if (isLoadingMore || !hasMore || loading) return;
@@ -133,16 +138,7 @@ export const useInfiniteListings = ({
     const nextPage = page + 1;
     setPage(nextPage);
     fetchListings(nextPage, false);
-  }, [page, isLoadingMore, hasMore, loading]);
-
-  // Carregamento inicial
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchListings(0, true);
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, []);
+  }, [page, isLoadingMore, hasMore, loading, fetchListings]);
 
   return {
     listings,
