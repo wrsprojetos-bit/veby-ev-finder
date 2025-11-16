@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { S3Bucket } from "https://deno.land/x/s3@0.5.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,41 +33,40 @@ serve(async (req) => {
       );
     }
 
-    // Importar dinamicamente AWS SDK
-    const { S3Client, PutObjectCommand } = await import("npm:@aws-sdk/client-s3@3.470.0");
+    const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID") || "";
+    const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY") || "";
+    const bucketName = Deno.env.get("R2_BUCKET_NAME") || "veby-videos";
+    const endpoint = Deno.env.get("R2_ENDPOINT") || "";
 
-    // Configurar S3 Client para Cloudflare R2
-    const s3Client = new S3Client({
+    // Remover https:// do endpoint
+    const cleanEndpoint = endpoint.replace("https://", "").replace("http://", "");
+
+    // Configurar bucket S3 (R2 é compatível com S3)
+    const bucket = new S3Bucket({
+      accessKeyID: accessKeyId,
+      secretKey: secretAccessKey,
+      bucket: bucketName,
       region: "auto",
-      endpoint: Deno.env.get("R2_ENDPOINT"),
-      credentials: {
-        accessKeyId: Deno.env.get("R2_ACCESS_KEY_ID") || "",
-        secretAccessKey: Deno.env.get("R2_SECRET_ACCESS_KEY") || "",
-      },
+      endpointURL: `https://${cleanEndpoint}`,
     });
 
     // Gerar nome único para o arquivo
     const timestamp = Date.now();
     const fileName = `${userId}/${listingId}_${timestamp}.mp4`;
-    const bucketName = Deno.env.get("R2_BUCKET_NAME") || "veby-videos";
 
-    // Converter File para ArrayBuffer
+    // Converter File para Uint8Array
     const arrayBuffer = await videoFile.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 
-    // Upload para R2
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: fileName,
-      Body: buffer,
-      ContentType: "video/mp4",
+    console.log("Iniciando upload:", { fileName, size: videoFile.size });
+
+    // Fazer upload para R2
+    await bucket.putObject(fileName, buffer, {
+      contentType: "video/mp4",
     });
 
-    await s3Client.send(command);
-
-    // Construir URL pública - usar endpoint customizado do R2
-    const r2Domain = Deno.env.get("R2_ENDPOINT")?.replace("https://", "") || "";
-    const publicUrl = `https://${r2Domain}/${fileName}`;
+    // URL pública do vídeo
+    const publicUrl = `https://${cleanEndpoint}/${bucketName}/${fileName}`;
 
     console.log("Upload concluído:", { fileName, size: videoFile.size, publicUrl });
 
@@ -87,6 +87,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Erro no upload",
+        details: error instanceof Error ? error.stack : undefined,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
