@@ -178,10 +178,8 @@ const Explore = () => {
                     id={listing.id}
                     title={listing.brand_model}
                     price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                    thumbnail={listing.video_thumbnail || listing.thumbnail_url}
-                    preview={listing.video_preview}
+                    thumbnail={listing.video_thumbnail || listing.thumbnail_url || listing.images?.[0]}
                     videoUrl={listing.video_url}
-                    image={listing.images?.[0]}
                     views={listing.views || 0}
                   />
                 ))}
