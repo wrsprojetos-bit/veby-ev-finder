@@ -87,7 +87,7 @@ const Index = () => {
       {/* Desktop Sidebar - Hidden on mobile */}
       <aside className="hidden md:flex fixed left-0 top-0 h-screen w-64 bg-black border-r border-white/10 flex-col p-4 z-50">
         <div className="flex items-center gap-2 mb-8 px-2">
-          <img src={vebyLogo} alt="VEBY" className="w-10 h-10" />
+          <img src={vebyLogo} alt="VEBY" className="w-10 h-10" decoding="async" loading="eager" />
           <h1 className="text-2xl font-bold text-white">VEBY</h1>
         </div>
         

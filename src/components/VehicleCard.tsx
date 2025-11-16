@@ -168,7 +168,7 @@ export const VehicleCard = ({
     return (
       <div className="flex gap-3 p-3 bg-card rounded-xl border border-border hover:border-primary/50 transition-all">
         <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
-          <img src={image} alt={title} className="w-full h-full object-cover" width="96" height="96" style={{ aspectRatio: '1/1' }} />
+          <img src={image} alt={title} className="w-full h-full object-cover" width="96" height="96" style={{ aspectRatio: '1/1' }} decoding="async" loading="lazy" />
           {acceptsTrade && (
             <div className="absolute top-1 right-1 bg-secondary/90 text-secondary-foreground text-xs px-2 py-0.5 rounded">
               Troca
@@ -227,6 +227,8 @@ export const VehicleCard = ({
               style={{ aspectRatio: '9/16' }}
               width="500"
               height="889"
+              decoding="async"
+              loading="eager"
             />
           )}
           
