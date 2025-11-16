@@ -39,6 +39,10 @@ export const publishSchema = z.object({
   type: z.enum(["vendo", "troco", "procuro"], {
     errorMap: () => ({ message: "Tipo inválido" }),
   }),
+  category: z.string()
+    .min(1, "Categoria é obrigatória")
+    .max(50, "Categoria deve ter no máximo 50 caracteres")
+    .trim(),
   // Campos básicos
   tipo_veiculo: z.enum([
     "bike_eletrica",
