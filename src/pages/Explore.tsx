@@ -49,13 +49,6 @@ const Explore = () => {
     }
   }, [location]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <p className="text-white">Carregando...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-black pb-16">
@@ -233,7 +226,7 @@ const Explore = () => {
           )
         ) : (
           <div className="text-center py-12 text-white/70">
-            <p>Nenhum anúncio disponível</p>
+            <p>{loading ? 'Carregando...' : 'Nenhum anúncio disponível'}</p>
           </div>
         )}
       </main>
