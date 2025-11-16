@@ -284,27 +284,45 @@ export type Database = {
       listings: {
         Row: {
           accepts_trade: boolean | null
+          ano: number | null
           approved: boolean | null
+          autonomia_km: number | null
+          bairro: string | null
           brand_model: string
+          capacidade_bateria: string | null
           category: string
           city: string | null
           comments_count: number | null
           created_at: string | null
           description: string | null
+          documentacao_em_dia: boolean | null
           engagement_score: number | null
+          estado_conservacao:
+            | Database["public"]["Enums"]["conservation_state"]
+            | null
           id: string
           images: string[] | null
+          inclui_carregador: boolean | null
+          inclui_segunda_bateria: boolean | null
+          licenciado: boolean | null
           likes: number | null
           location: string
+          marca: string | null
+          modelo: string | null
+          potencia_motor: string | null
           preview_url: string | null
           price: number | null
+          quilometragem_km: number | null
           ranking_score: number | null
           state: string | null
           status: string | null
           subcategory: string | null
           tags: string[] | null
+          tempo_carga_horas: string | null
           thumbnail_url: string | null
+          tipo_veiculo: Database["public"]["Enums"]["vehicle_type"] | null
           type: string
+          unico_dono: boolean | null
           user_id: string
           video_duration: number | null
           video_preview: string | null
@@ -315,27 +333,45 @@ export type Database = {
         }
         Insert: {
           accepts_trade?: boolean | null
+          ano?: number | null
           approved?: boolean | null
+          autonomia_km?: number | null
+          bairro?: string | null
           brand_model: string
+          capacidade_bateria?: string | null
           category: string
           city?: string | null
           comments_count?: number | null
           created_at?: string | null
           description?: string | null
+          documentacao_em_dia?: boolean | null
           engagement_score?: number | null
+          estado_conservacao?:
+            | Database["public"]["Enums"]["conservation_state"]
+            | null
           id?: string
           images?: string[] | null
+          inclui_carregador?: boolean | null
+          inclui_segunda_bateria?: boolean | null
+          licenciado?: boolean | null
           likes?: number | null
           location: string
+          marca?: string | null
+          modelo?: string | null
+          potencia_motor?: string | null
           preview_url?: string | null
           price?: number | null
+          quilometragem_km?: number | null
           ranking_score?: number | null
           state?: string | null
           status?: string | null
           subcategory?: string | null
           tags?: string[] | null
+          tempo_carga_horas?: string | null
           thumbnail_url?: string | null
+          tipo_veiculo?: Database["public"]["Enums"]["vehicle_type"] | null
           type: string
+          unico_dono?: boolean | null
           user_id: string
           video_duration?: number | null
           video_preview?: string | null
@@ -346,27 +382,45 @@ export type Database = {
         }
         Update: {
           accepts_trade?: boolean | null
+          ano?: number | null
           approved?: boolean | null
+          autonomia_km?: number | null
+          bairro?: string | null
           brand_model?: string
+          capacidade_bateria?: string | null
           category?: string
           city?: string | null
           comments_count?: number | null
           created_at?: string | null
           description?: string | null
+          documentacao_em_dia?: boolean | null
           engagement_score?: number | null
+          estado_conservacao?:
+            | Database["public"]["Enums"]["conservation_state"]
+            | null
           id?: string
           images?: string[] | null
+          inclui_carregador?: boolean | null
+          inclui_segunda_bateria?: boolean | null
+          licenciado?: boolean | null
           likes?: number | null
           location?: string
+          marca?: string | null
+          modelo?: string | null
+          potencia_motor?: string | null
           preview_url?: string | null
           price?: number | null
+          quilometragem_km?: number | null
           ranking_score?: number | null
           state?: string | null
           status?: string | null
           subcategory?: string | null
           tags?: string[] | null
+          tempo_carga_horas?: string | null
           thumbnail_url?: string | null
+          tipo_veiculo?: Database["public"]["Enums"]["vehicle_type"] | null
           type?: string
+          unico_dono?: boolean | null
           user_id?: string
           video_duration?: number | null
           video_preview?: string | null
@@ -842,6 +896,17 @@ export type Database = {
     Enums: {
       account_type: "pessoa_fisica" | "empresa"
       app_role: "super_admin" | "moderador" | "suporte" | "financeiro"
+      conservation_state: "novo" | "seminovo" | "usado"
+      vehicle_type:
+        | "bike_eletrica"
+        | "patinete_eletrico"
+        | "scooter_eletrica"
+        | "moto_eletrica"
+        | "carro_eletrico_ou_hibrido_plug_in"
+        | "hoverboard_skate_eletrico"
+        | "monociclo_eletrico"
+        | "quadriciclo_kart_eletrico"
+        | "outro_eletrico_pessoal"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -971,6 +1036,18 @@ export const Constants = {
     Enums: {
       account_type: ["pessoa_fisica", "empresa"],
       app_role: ["super_admin", "moderador", "suporte", "financeiro"],
+      conservation_state: ["novo", "seminovo", "usado"],
+      vehicle_type: [
+        "bike_eletrica",
+        "patinete_eletrico",
+        "scooter_eletrica",
+        "moto_eletrica",
+        "carro_eletrico_ou_hibrido_plug_in",
+        "hoverboard_skate_eletrico",
+        "monociclo_eletrico",
+        "quadriciclo_kart_eletrico",
+        "outro_eletrico_pessoal",
+      ],
     },
   },
 } as const

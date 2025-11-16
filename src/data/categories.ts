@@ -1,81 +1,30 @@
+// Tipos de veículos elétricos permitidos no VEBY
+export const VEHICLE_TYPES = {
+  bike_eletrica: "Bike elétrica",
+  patinete_eletrico: "Patinete elétrico",
+  scooter_eletrica: "Scooter elétrica",
+  moto_eletrica: "Moto elétrica",
+  carro_eletrico_ou_hibrido_plug_in: "Carro elétrico / híbrido plug-in",
+  hoverboard_skate_eletrico: "Hoverboard / Skate elétrico",
+  monociclo_eletrico: "Monociclo elétrico",
+  quadriciclo_kart_eletrico: "Quadriciclo / Kart elétrico",
+  outro_eletrico_pessoal: "Outros elétricos"
+} as const;
+
+export type VehicleType = keyof typeof VEHICLE_TYPES;
+
+// Estados de conservação
+export const CONSERVATION_STATES = {
+  novo: "Novo",
+  seminovo: "Seminovo",
+  usado: "Usado"
+} as const;
+
+export type ConservationState = keyof typeof CONSERVATION_STATES;
+
+// Mapeamento legado (para compatibilidade com código antigo)
 export const CATEGORIES = {
-  "Veículos": [
-    "Carros",
-    "Motos",
-    "Caminhões",
-    "Bicicletas",
-    "Patinetes",
-    "Veículos elétricos",
-    "Peças e acessórios"
-  ],
-  "Imóveis": [
-    "Casas",
-    "Apartamentos",
-    "Terrenos",
-    "Kitnets / Studios",
-    "Salas comerciais",
-    "Aluguel de temporada"
-  ],
-  "Eletrônicos e Informática": [
-    "Celulares",
-    "Tablets",
-    "Computadores e Notebooks",
-    "Acessórios",
-    "Games e Consoles",
-    "TVs e Áudio"
-  ],
-  "Moda e Beleza": [
-    "Roupas masculinas",
-    "Roupas femininas",
-    "Calçados",
-    "Bolsas e acessórios",
-    "Relógios e joias",
-    "Produtos de beleza"
-  ],
-  "Casa e Jardim": [
-    "Móveis",
-    "Eletrodomésticos",
-    "Decoração",
-    "Ferramentas",
-    "Jardim e construção"
-  ],
-  "Bebês e Crianças": [
-    "Roupas infantis",
-    "Brinquedos",
-    "Carrinhos e cadeirinhas",
-    "Artigos escolares"
-  ],
-  "Pets": [
-    "Adoção",
-    "Venda",
-    "Acessórios",
-    "Serviços veterinários"
-  ],
-  "Esporte e Lazer": [
-    "Bicicletas",
-    "Equipamentos esportivos",
-    "Instrumentos musicais",
-    "Camping e aventura"
-  ],
-  "Serviços": [
-    "Reformas e reparos",
-    "Transportes e fretes",
-    "Consultoria",
-    "Aulas particulares",
-    "Estética e beleza",
-    "TI e marketing digital"
-  ],
-  "Negócios e Oportunidades": [
-    "Franquias",
-    "Equipamentos comerciais",
-    "Parcerias e investimentos",
-    "Vagas e empregos"
-  ],
-  "Outros": [
-    "Itens colecionáveis",
-    "Artesanato",
-    "Diversos"
-  ]
+  "Veículos Elétricos": Object.values(VEHICLE_TYPES)
 };
 
 export const BRAZILIAN_STATES = [

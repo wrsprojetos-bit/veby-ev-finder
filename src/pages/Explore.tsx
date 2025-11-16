@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { CATEGORIES, BRAZILIAN_STATES } from "@/data/categories";
+import { VEHICLE_TYPES, BRAZILIAN_STATES } from "@/data/categories";
 import { useCities } from "@/hooks/useCities";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
@@ -59,7 +59,7 @@ const Explore = () => {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/50" />
               <Input
-                placeholder="Buscar produtos, serviços ou imóveis..."
+                placeholder="Buscar veículos elétricos..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/50"
@@ -137,7 +137,7 @@ const Explore = () => {
             )}
           </div>
 
-          {/* Categorias */}
+          {/* Tipos de Veículos */}
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
             <button
               onClick={() => setSelectedCategory("Todos")}
@@ -149,17 +149,17 @@ const Explore = () => {
             >
               Todos
             </button>
-            {Object.keys(CATEGORIES).map((category) => (
+            {Object.entries(VEHICLE_TYPES).map(([key, label]) => (
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                key={key}
+                onClick={() => setSelectedCategory(key)}
                 className={`px-4 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
-                  selectedCategory === category
+                  selectedCategory === key
                     ? "bg-[#00FF7F] text-black"
                     : "bg-white/10 text-white hover:bg-white/20"
                 }`}
               >
-                {category}
+                {label}
               </button>
             ))}
           </div>
