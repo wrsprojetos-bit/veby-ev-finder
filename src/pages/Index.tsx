@@ -70,7 +70,7 @@ const Index = () => {
           </div>
         </header>
         <main className="pt-20 px-4 text-center">
-          <p className="text-white/70 mb-4">Nenhum anúncio disponível no momento.</p>
+          <p className="text-white/70 mb-4">Nenhum veículo elétrico disponível no momento.</p>
           {!user && (
             <Button onClick={() => navigate("/auth")} className="bg-[#00FF7F] text-black hover:bg-[#00FF7F]/90">
               Fazer Login para Publicar
