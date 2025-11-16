@@ -152,6 +152,51 @@ const Publish = () => {
         .eq("id", user.id)
         .single();
 
+      // PASSO 2: Capturar localização GPS ao criar anúncio
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+
+      try {
+        // Primeiro, tentar pegar GPS do navegador
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          if (!navigator.geolocation) {
+            reject(new Error("GPS não disponível"));
+            return;
+          }
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            maximumAge: 300000,
+            enableHighAccuracy: false
+          });
+        });
+
+        latitude = position.coords.latitude;
+        longitude = position.coords.longitude;
+        console.log("📍 GPS capturado:", { latitude, longitude });
+      } catch (gpsError) {
+        console.warn("⚠️ GPS negado, usando geocoding por cidade/estado");
+        
+        // Se GPS falhar, usar geocoding aproximado por cidade/estado
+        if (profile?.location_city && profile?.location_state) {
+          try {
+            const query = `${profile.location_city}, ${profile.location_state}, Brasil`;
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+              { headers: { 'User-Agent': 'VEBY-App/1.0' } }
+            );
+            const geocodeData = await response.json();
+            
+            if (geocodeData && geocodeData.length > 0) {
+              latitude = parseFloat(geocodeData[0].lat);
+              longitude = parseFloat(geocodeData[0].lon);
+              console.log("📍 Geocoding aproximado:", { latitude, longitude });
+            }
+          } catch (geocodeError) {
+            console.error("Erro no geocoding:", geocodeError);
+          }
+        }
+      }
+
       const { data: listing, error: listingError } = await supabase
         .from("listings")
         .insert({
@@ -182,6 +227,9 @@ const Publish = () => {
           location: `${profile?.location_city || ''}, ${profile?.location_state || ''}`,
           status: "ativo",
           category: "Veículos Elétricos",
+          // NOVOS CAMPOS: latitude e longitude
+          latitude: latitude,
+          longitude: longitude,
         })
         .select()
         .single();

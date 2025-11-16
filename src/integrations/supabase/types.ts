@@ -304,9 +304,11 @@ export type Database = {
           images: string[] | null
           inclui_carregador: boolean | null
           inclui_segunda_bateria: boolean | null
+          latitude: number | null
           licenciado: boolean | null
           likes: number | null
           location: string
+          longitude: number | null
           marca: string | null
           modelo: string | null
           potencia_motor: string | null
@@ -353,9 +355,11 @@ export type Database = {
           images?: string[] | null
           inclui_carregador?: boolean | null
           inclui_segunda_bateria?: boolean | null
+          latitude?: number | null
           licenciado?: boolean | null
           likes?: number | null
           location: string
+          longitude?: number | null
           marca?: string | null
           modelo?: string | null
           potencia_motor?: string | null
@@ -402,9 +406,11 @@ export type Database = {
           images?: string[] | null
           inclui_carregador?: boolean | null
           inclui_segunda_bateria?: boolean | null
+          latitude?: number | null
           licenciado?: boolean | null
           likes?: number | null
           location?: string
+          longitude?: number | null
           marca?: string | null
           modelo?: string | null
           potencia_motor?: string | null
@@ -871,6 +877,60 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_listings_by_distance: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          radius_km?: number
+          user_lat: number
+          user_lng: number
+        }
+        Returns: {
+          accepts_trade: boolean
+          ano: number
+          approved: boolean
+          autonomia_km: number
+          bairro: string
+          brand_model: string
+          capacidade_bateria: string
+          category: string
+          city: string
+          created_at: string
+          description: string
+          distance_km: number
+          documentacao_em_dia: boolean
+          engagement_score: number
+          estado_conservacao: Database["public"]["Enums"]["conservation_state"]
+          id: string
+          images: string[]
+          inclui_carregador: boolean
+          inclui_segunda_bateria: boolean
+          latitude: number
+          licenciado: boolean
+          likes: number
+          location: string
+          longitude: number
+          marca: string
+          modelo: string
+          potencia_motor: string
+          price: number
+          quilometragem_km: number
+          ranking_score: number
+          state: string
+          status: string
+          tags: string[]
+          tempo_carga_horas: string
+          thumbnail_url: string
+          tipo_veiculo: Database["public"]["Enums"]["vehicle_type"]
+          type: string
+          unico_dono: boolean
+          user_id: string
+          video_preview: string
+          video_thumbnail: string
+          video_url: string
+          views: number
+        }[]
+      }
       get_personalized_feed: {
         Args: { p_limit?: number; p_offset?: number; p_user_id: string }
         Returns: {

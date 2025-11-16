@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { LocationSelector } from "@/components/LocationSelector";
-import { useInfiniteRecommendations } from "@/hooks/useInfiniteRecommendations";
+import { useProximityFeed } from "@/hooks/useProximityFeed";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
 
 const Index = () => {
@@ -20,14 +20,23 @@ const Index = () => {
   const navigate = useNavigate();
   const { location } = useGeolocation();
   
-  // Hook de recomendações inteligentes com scroll infinito
+  // PASSO 4 e 5: Hook de feed por proximidade com raio progressivo
   const userCity = selectedCity || location.city;
   const userState = selectedState || location.state;
-  const { recommendations, loading, isLoadingMore, hasMore, loadMore } = useInfiniteRecommendations(
-    userCity,
-    userState,
-    user?.id
-  );
+  const {
+    listings: recommendations,
+    loading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
+    feedMode,
+    userLocation
+  } = useProximityFeed({
+    userId: user?.id,
+    userCity: userCity || undefined,
+    userState: userState || undefined,
+    enabled: true
+  });
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
