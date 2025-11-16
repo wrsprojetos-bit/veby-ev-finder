@@ -35,7 +35,11 @@ export const useInfiniteListings = ({
     searchQuery,
   });
 
+  const isFetchingRef = useRef(false);
+
   const fetchListings = useCallback(async (pageNum: number, isReset: boolean = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       if (isReset) {
         setLoading(true);
@@ -104,6 +108,7 @@ export const useInfiniteListings = ({
     } finally {
       setLoading(false);
       setIsLoadingMore(false);
+      isFetchingRef.current = false;
     }
   }, [selectedCategory, selectedState, selectedCity, searchQuery, userId, onCategoryView, onSearchAdd]);
 
