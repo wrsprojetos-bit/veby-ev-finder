@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Search, LogIn, MapPin, Grid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { CATEGORIES, BRAZILIAN_STATES } from "@/data/categories";
@@ -14,10 +13,10 @@ import { useCities } from "@/hooks/useCities";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { LocationSelector } from "@/components/LocationSelector";
+import { useInfiniteListings } from "@/hooks/useInfiniteListings";
+import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
 
 const Explore = () => {
-  const [listings, setListings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -30,6 +29,16 @@ const Explore = () => {
   const { location } = useGeolocation();
   const { addRecentSearch, trackCategoryView } = useUserPreferences();
 
+  const { listings, loading, isLoadingMore, hasMore, loadMore } = useInfiniteListings({
+    selectedCategory,
+    selectedState,
+    selectedCity,
+    searchQuery,
+    onCategoryView: trackCategoryView,
+    onSearchAdd: addRecentSearch,
+    userId: user?.id,
+  });
+
   // Usar localização do hook se disponível
   useEffect(() => {
     if (location.state && !selectedState) {
@@ -39,64 +48,6 @@ const Explore = () => {
       setSelectedCity(location.city);
     }
   }, [location]);
-
-  const fetchListings = async () => {
-    try {
-      setLoading(true);
-      let query = supabase
-        .from("listings")
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            photo_url,
-            location,
-            verified
-          )
-        `)
-        .eq("status", "ativo");
-
-      // Filtro por categoria
-      if (selectedCategory !== "Todos") {
-        query = query.eq("category", selectedCategory);
-        if (user) trackCategoryView(selectedCategory);
-      }
-
-      // Filtro por estado
-      if (selectedState) {
-        query = query.eq("state", selectedState);
-      }
-
-      // Filtro por cidade
-      if (selectedCity) {
-        query = query.eq("city", selectedCity);
-      }
-
-      // Busca por texto
-      if (searchQuery) {
-        query = query.or(`brand_model.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-        if (user) addRecentSearch(searchQuery);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(100);
-
-      if (error) throw error;
-      
-      setListings(data || []);
-    } catch (error) {
-      console.error("Erro ao carregar anúncios:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchListings();
-    }, 300);
-    
-    return () => clearTimeout(timer);
-  }, [selectedCategory, selectedState, selectedCity, searchQuery, user]);
 
   if (loading) {
     return (
@@ -225,46 +176,60 @@ const Explore = () => {
       <main className="pt-40 px-4">
         {listings.length > 0 ? (
           viewMode === "grid" ? (
-            // Visualização em grid com previews
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-4">
-              {listings.map((listing) => (
-                <ExploreGridCard
-                  key={listing.id}
-                  id={listing.id}
-                  title={listing.brand_model}
-                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                  thumbnail={listing.video_thumbnail || listing.thumbnail_url}
-                  preview={listing.video_preview}
-                  videoUrl={listing.video_url}
-                  image={listing.images?.[0]}
-                  views={listing.views || 0}
-                />
-              ))}
-            </div>
+            <>
+              {/* Visualização em grid com previews */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-4">
+                {listings.map((listing) => (
+                  <ExploreGridCard
+                    key={listing.id}
+                    id={listing.id}
+                    title={listing.brand_model}
+                    price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                    thumbnail={listing.video_thumbnail || listing.thumbnail_url}
+                    preview={listing.video_preview}
+                    videoUrl={listing.video_url}
+                    image={listing.images?.[0]}
+                    views={listing.views || 0}
+                  />
+                ))}
+              </div>
+              <InfiniteScrollTrigger 
+                onLoadMore={loadMore}
+                isLoading={isLoadingMore}
+                hasMore={hasMore}
+              />
+            </>
           ) : (
-            // Visualização em lista
-            <div className="space-y-3 pb-4">
-              {listings.map((listing) => (
-                <VehicleCard 
-                  key={listing.id} 
-                  id={listing.id}
-                  title={listing.brand_model}
-                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                  location={`${listing.city || ''}, ${listing.state || ''}`}
-                  distance="2.5 km"
-                  views={listing.views}
-                  image={listing.video_thumbnail || listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-                  videoUrl={listing.video_url}
-                  category={listing.category}
-                  acceptsTrade={listing.accepts_trade}
-                  variant="list"
-                  sellerId={listing.user_id}
-                  listingId={listing.id}
-                  sellerName={listing.profiles?.name}
-                  sellerAvatar={listing.profiles?.photo_url}
-                />
-              ))}
-            </div>
+            <>
+              {/* Visualização em lista */}
+              <div className="space-y-3 pb-4">
+                {listings.map((listing) => (
+                  <VehicleCard 
+                    key={listing.id} 
+                    id={listing.id}
+                    title={listing.brand_model}
+                    price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                    location={`${listing.city || ''}, ${listing.state || ''}`}
+                    distance="2.5 km"
+                    views={listing.views}
+                    image={listing.video_thumbnail || listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                    videoUrl={listing.video_url}
+                    category={listing.category}
+                    acceptsTrade={listing.accepts_trade}
+                    variant="list"
+                    sellerId={listing.user_id}
+                    listingId={listing.id}
+                    sellerName={listing.profiles?.name}
+                    sellerAvatar={listing.profiles?.photo_url}
+                  />
+                ))}
+              </div>
+              <InfiniteScrollTrigger 
+                onLoadMore={loadMore}
+                isLoading={isLoadingMore}
+                hasMore={hasMore}
+              />
+            </>
           )
         ) : (
           <div className="text-center py-12 text-white/70">
