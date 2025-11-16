@@ -88,8 +88,6 @@ export const VehicleCard = ({
         el.currentTime = 0;
       };
 
-      const rootEl = el.closest('[data-scroll-root="true"]');
-
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -102,7 +100,7 @@ export const VehicleCard = ({
             }
           });
         },
-        { threshold: [0.5, 0.75, 1.0], root: (rootEl as Element) || null }
+        { threshold: [0.5, 0.75, 1.0], root: null }
       );
 
       observer.observe(el);
