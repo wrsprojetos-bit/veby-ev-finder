@@ -27,6 +27,7 @@ interface VehicleCardProps {
   sellerName?: string;
   sellerAvatar?: string;
   recommendationReason?: string;
+  isPriority?: boolean;
 }
 
 export const VehicleCard = ({
@@ -46,6 +47,7 @@ export const VehicleCard = ({
   sellerName = "Vendedor",
   sellerAvatar,
   recommendationReason,
+  isPriority = false,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
   const { findOrCreateChat } = useChat();
@@ -218,6 +220,7 @@ export const VehicleCard = ({
               webkit-playsinline="true"
               disablePictureInPicture
               controls={false}
+              {...(isPriority && { fetchpriority: 'high' as any })}
             />
           ) : (
             <img
@@ -229,6 +232,7 @@ export const VehicleCard = ({
               height="889"
               decoding="async"
               loading="eager"
+              {...(isPriority && { fetchpriority: 'high' as any })}
             />
           )}
           

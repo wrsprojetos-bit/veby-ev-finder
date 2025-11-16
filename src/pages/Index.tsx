@@ -179,7 +179,7 @@ const Index = () => {
         {viewMode === "feed" ? (
           <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:snap-y md:snap-mandatory" data-scroll-root="true" id="feed-scroll">
             <div className="md:flex md:flex-col md:items-center md:justify-start md:h-full">
-              {recommendations.map((listing) => (
+              {recommendations.map((listing, index) => (
                 <VehicleCard 
                   key={listing.id}
                   id={listing.id}
@@ -198,6 +198,7 @@ const Index = () => {
                   sellerName={listing.profiles?.name}
                   sellerAvatar={listing.profiles?.photo_url}
                   recommendationReason={listing.recommendation_reason}
+                  isPriority={index === 0}
                 />
               ))}
               <InfiniteScrollTrigger 
