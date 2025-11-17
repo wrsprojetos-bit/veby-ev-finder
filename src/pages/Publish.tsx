@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Video, X, Loader2 } from "lucide-react";
+import { Video, X, Loader2, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { toast } from "sonner";
-import { VEHICLE_TYPES, CONSERVATION_STATES } from "@/data/categories";
+import { VEHICLE_TYPES, CONSERVATION_STATES, BRAZILIAN_STATES } from "@/data/categories";
+import { useCities } from "@/hooks/useCities";
 
 const Publish = () => {
   const { user, loading } = useAuth();
@@ -46,6 +47,8 @@ const Publish = () => {
     inclui_carregador: false,
     inclui_segunda_bateria: false,
   });
+
+  const cities = useCities(formData.estado);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -420,18 +423,17 @@ const Publish = () => {
             </Select>
           </div>
 
-          {/* Tipo de Veículo */}
+          {/* Tipo de Veículo (opcional) */}
           <div className="space-y-2">
             <Label htmlFor="tipo_veiculo" className="text-base font-semibold">
-              Tipo de veículo <span className="text-destructive">*</span>
+              Tipo de veículo
             </Label>
             <Select
               value={formData.tipo_veiculo}
               onValueChange={(value) => setFormData({ ...formData, tipo_veiculo: value })}
-              required
             >
-              <SelectTrigger className={!formData.tipo_veiculo ? "border-destructive/50" : ""}>
-                <SelectValue placeholder="Selecione o tipo de veículo" />
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o tipo de veículo (opcional)" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(VEHICLE_TYPES).map(([key, label]) => (
@@ -441,18 +443,17 @@ const Publish = () => {
             </Select>
           </div>
 
-          {/* Estado de Conservação */}
+          {/* Estado de Conservação (opcional) */}
           <div className="space-y-2">
             <Label htmlFor="estado_conservacao" className="text-base font-semibold">
-              Estado de conservação <span className="text-destructive">*</span>
+              Estado de conservação
             </Label>
             <Select
               value={formData.estado_conservacao}
               onValueChange={(value) => setFormData({ ...formData, estado_conservacao: value })}
-              required
             >
-              <SelectTrigger className={!formData.estado_conservacao ? "border-destructive/50" : ""}>
-                <SelectValue placeholder="Selecione o estado" />
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o estado (opcional)" />
               </SelectTrigger>
               <SelectContent>
                 {Object.entries(CONSERVATION_STATES).map(([key, label]) => (
@@ -566,19 +567,17 @@ const Publish = () => {
             </div>
           </div>
 
-          {/* Potência e Tempo de Carga */}
+          {/* Motor e Tempo de carga (opcionais) */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="potencia_motor" className="text-base font-semibold">
-                Potência do motor <span className="text-destructive">*</span>
+                Potência do motor
               </Label>
               <Input
                 id="potencia_motor"
                 value={formData.potencia_motor}
                 onChange={(e) => setFormData({ ...formData, potencia_motor: e.target.value })}
-                placeholder="350W, 3kW ou 150cv"
-                className={!formData.potencia_motor ? "border-destructive/50" : ""}
-                required
+                placeholder="250W (opcional)"
               />
             </div>
             <div className="space-y-2">
@@ -587,7 +586,7 @@ const Publish = () => {
                 id="tempo_carga_horas"
                 value={formData.tempo_carga_horas}
                 onChange={(e) => setFormData({ ...formData, tempo_carga_horas: e.target.value })}
-                placeholder="4-6"
+                placeholder="4-6h"
               />
             </div>
           </div>
@@ -610,6 +609,68 @@ const Publish = () => {
             />
           </div>
 
+          {/* Localização */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              <Label className="text-base font-semibold">
+                Localização <span className="text-destructive">*</span>
+              </Label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="estado">Estado</Label>
+                <Select
+                  value={formData.estado}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, estado: value, cidade: "" });
+                  }}
+                  required
+                >
+                  <SelectTrigger className={!formData.estado ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder="UF" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BRAZILIAN_STATES.map((state) => (
+                      <SelectItem key={state.uf} value={state.uf}>
+                        {state.uf} - {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cidade">Cidade</Label>
+                <Select
+                  value={formData.cidade}
+                  onValueChange={(value) => setFormData({ ...formData, cidade: value })}
+                  disabled={!formData.estado}
+                  required
+                >
+                  <SelectTrigger className={!formData.cidade ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder={formData.estado ? "Selecione" : "Escolha o estado"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {formData.estado && formData.cidade && (
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {formData.cidade}, {formData.estado}
+              </div>
+            )}
+          </div>
+
           {/* Bairro */}
           <div className="space-y-2">
             <Label htmlFor="bairro">Bairro</Label>
@@ -617,19 +678,23 @@ const Publish = () => {
               id="bairro"
               value={formData.bairro}
               onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
-              placeholder="Centro"
+              placeholder="Centro (opcional)"
             />
           </div>
 
           {/* Descrição */}
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
+            <Label htmlFor="description" className="text-base font-semibold">
+              Descrição <span className="text-destructive">*</span>
+            </Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Descreva seu veículo..."
               rows={4}
+              className={!formData.description ? "border-destructive/50" : ""}
+              required
             />
           </div>
 
