@@ -111,7 +111,7 @@ const Publish = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ===== ETAPA 1: VALIDAÇÕES INICIAIS =====
+    // ===== ETAPA 1: VALIDAÇÕES INICIAIS (UI) =====
     if (!user) {
       toast.error("Você precisa estar logado para publicar");
       navigate("/auth");
@@ -123,58 +123,56 @@ const Publish = () => {
       return;
     }
 
-    // Validação de campos obrigatórios
-    const requiredFields = {
+    // Apenas os campos visíveis na UI
+    const requiredFields: Record<string, string> = {
       category: "Categoria",
-      tipo_veiculo: "Tipo de veículo",
       title: "Título",
-      brand: "Marca",
-      model: "Modelo",
-      ano: "Ano",
       price: "Preço",
-      capacidade_bateria: "Capacidade da bateria",
-      potencia_motor: "Potência do motor",
-      estado_conservacao: "Estado de conservação",
+      description: "Descrição",
+      estado: "Estado",
+      cidade: "Cidade",
     };
 
     for (const [field, label] of Object.entries(requiredFields)) {
-      if (!formData[field as keyof typeof formData]) {
+      const value = (formData as any)[field];
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
         toast.error(`Campo obrigatório: ${label}`);
         return;
       }
     }
 
     try {
-      // ===== ETAPA 2: VALIDAÇÃO ZOD =====
+      // ===== ETAPA 2: UPLOAD DO VÍDEO (ANTES DA VALIDAÇÃO ZOD) =====
+      toast.info("Fazendo upload do vídeo...");
+      const tempListingId = crypto.randomUUID();
+      const uploadResult = await uploadVideoWithAssets(videoFile, tempListingId);
+      if (!uploadResult) {
+        toast.error("Não foi possível enviar o vídeo. Tente novamente.");
+        return;
+      }
+
+      // ===== ETAPA 3: VALIDAÇÃO ZOD (APENAS CAMPOS DA UI) =====
       const { publishSchema } = await import("@/schemas/validation");
-      const validatedData = publishSchema.parse({
+      const zodInput = {
         type: formData.type,
         category: formData.category,
-        tipo_veiculo: formData.tipo_veiculo,
         title: formData.title,
-        brand: formData.brand,
-        model: formData.model,
-        ano: formData.ano ? parseInt(formData.ano) : new Date().getFullYear(),
         price: formData.price ? parseFloat(formData.price) : 0,
-        description: formData.description || null,
-        autonomia_km: formData.autonomia_km ? parseInt(formData.autonomia_km) : null,
-        capacidade_bateria: formData.capacidade_bateria,
-        potencia_motor: formData.potencia_motor,
-        tempo_carga_horas: formData.tempo_carga_horas || null,
-        quilometragem_km: formData.quilometragem_km ? parseInt(formData.quilometragem_km) : null,
-        estado_conservacao: formData.estado_conservacao,
-        documentacao_em_dia: formData.documentacao_em_dia || false,
-        licenciado: formData.licenciado || false,
-        unico_dono: formData.unico_dono || false,
-        inclui_carregador: formData.inclui_carregador,
-        inclui_segunda_bateria: formData.inclui_segunda_bateria,
-        estado: formData.estado || "SP",
-        cidade: formData.cidade || "São Paulo",
-        bairro: formData.bairro || null,
-        acceptsTrade: formData.acceptsTrade,
-      });
+        description: formData.description,
+        location_state: formData.estado || "SP",
+        location_city: formData.cidade || "São Paulo",
+        video_url: uploadResult.videoUrl,
+        brand: formData.brand || "",
+        model: formData.model || "",
+        year: formData.ano ? parseInt(formData.ano) : null,
+        acceptsTrade: formData.acceptsTrade ?? false,
+      };
+      console.log("🔎 Zod input:", zodInput);
 
-      // ===== ETAPA 3: VERIFICAR/CRIAR PERFIL =====
+      const validatedData = publishSchema.parse(zodInput);
+      console.log("✅ Zod validado:", validatedData);
+
+      // ===== ETAPA 4: VERIFICAR/CRIAR PERFIL =====
       let profile = await supabase
         .from("profiles")
         .select("location_state, location_city")
@@ -185,42 +183,26 @@ const Publish = () => {
         console.log("⚠️ Criando perfil automaticamente...");
         const { error: createError } = await supabase
           .from("profiles")
-          .insert([{
-            id: user.id,
-            name: user.email?.split("@")[0] || "Usuário",
-            location: `${validatedData.cidade}, ${validatedData.estado}`,
-            location_city: validatedData.cidade,
-            location_state: validatedData.estado,
-          }]);
+          .insert([
+            {
+              id: user.id,
+              name: user.email?.split("@")[0] || "Usuário",
+              location: `${validatedData.location_city}, ${validatedData.location_state}`,
+              location_city: validatedData.location_city,
+              location_state: validatedData.location_state,
+            },
+          ]);
 
         if (createError) {
           console.error("❌ Erro ao criar perfil:", createError);
           toast.error("Erro ao criar perfil. Tente novamente.");
           return;
         }
-
-        profile = await supabase
-          .from("profiles")
-          .select("location_state, location_city")
-          .eq("id", user.id)
-          .maybeSingle();
       }
 
-      // ===== ETAPA 4: UPLOAD DO VÍDEO (ANTES DE INSERIR NO BANCO) =====
-      toast.info("Fazendo upload do vídeo...");
-      
-      const tempListingId = crypto.randomUUID();
-      const uploadResult = await uploadVideoWithAssets(videoFile, tempListingId);
-
-      if (!uploadResult) {
-        toast.error("Não foi possível enviar o vídeo. Tente novamente.");
-        return;
-      }
-
-      // ===== ETAPA 5: OBTER COORDENADAS (OPCIONAL) =====
+      // ===== ETAPA 5: (OPCIONAL) GPS =====
       let latitude: number | null = null;
       let longitude: number | null = null;
-
       if (navigator.geolocation) {
         try {
           const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -238,47 +220,36 @@ const Publish = () => {
         }
       }
 
-      // ===== ETAPA 6: INSERIR NO BANCO COM PAYLOAD LIMPO =====
+      // ===== ETAPA 6: INSERIR NO BANCO (PAYLOAD ALINHADO À TABELA) =====
       const listingPayload = {
         id: tempListingId,
         user_id: user.id,
         type: validatedData.type,
         category: validatedData.category,
-        tipo_veiculo: validatedData.tipo_veiculo,
-        brand_model: `${validatedData.brand} ${validatedData.model}`.trim(),
-        marca: validatedData.brand,
-        modelo: validatedData.model,
-        ano: validatedData.ano,
+        brand_model: validatedData.title, // mapeia title -> brand_model (coluna requerida)
+        marca: validatedData.brand || null,
+        modelo: validatedData.model || null,
+        ano: validatedData.year ?? null,
         price: validatedData.price,
         description: validatedData.description,
-        autonomia_km: validatedData.autonomia_km,
-        capacidade_bateria: validatedData.capacidade_bateria,
-        potencia_motor: validatedData.potencia_motor,
-        tempo_carga_horas: validatedData.tempo_carga_horas,
-        quilometragem_km: validatedData.quilometragem_km,
-        estado_conservacao: validatedData.estado_conservacao,
-        documentacao_em_dia: validatedData.documentacao_em_dia,
-        licenciado: validatedData.licenciado,
-        unico_dono: validatedData.unico_dono,
-        accepts_trade: validatedData.acceptsTrade,
-        inclui_carregador: validatedData.inclui_carregador,
-        inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
-        state: validatedData.estado,
-        city: validatedData.cidade,
-        bairro: validatedData.bairro,
-        location: `${validatedData.cidade}, ${validatedData.estado}`,
-        latitude: latitude,
-        longitude: longitude,
-        video_url: uploadResult.videoUrl,
+        state: validatedData.location_state,
+        city: validatedData.location_city,
+        location: `${validatedData.location_city}, ${validatedData.location_state}`,
+        latitude,
+        longitude,
+        video_url: validatedData.video_url,
         thumbnail_url: uploadResult.thumbnailUrl,
         preview_url: uploadResult.previewUrl,
         video_duration: uploadResult.duration,
         video_size: uploadResult.size,
+        accepts_trade: validatedData.acceptsTrade ?? false,
         status: "ativo",
         approved: true,
-      };
+      } as const;
 
-      console.log("📝 Inserindo listing:", listingPayload);
+      console.log("📝 Insert payload (listings):", listingPayload);
+      console.log("🧩 Insert columns:", Object.keys(listingPayload));
+      console.log("🧪 Insert values:", Object.values(listingPayload));
 
       const { data: listing, error: listingError } = await supabase
         .from("listings")
@@ -287,27 +258,14 @@ const Publish = () => {
         .single();
 
       if (listingError) {
-        console.error("❌ Erro ao criar listing:", listingError);
-        
-        let errorMessage = "Erro ao publicar anúncio.";
-        
-        if (listingError.code === "23514") {
-          errorMessage = "Tipo de anúncio inválido. Use 'vendo', 'troco' ou 'procuro'.";
-        } else if (listingError.code === "23502") {
-          errorMessage = `Campo obrigatório: ${listingError.message}`;
-        } else if (listingError.code === "22P02") {
-          errorMessage = "Formato de dado inválido. Verifique números e datas.";
-        } else if (listingError.message?.includes("row-level security")) {
-          errorMessage = "Erro de permissão. Faça login novamente.";
-        }
-        
-        toast.error(`${errorMessage} (código: ${listingError.code || 'desconhecido'})`);
+        console.error("❌ Erro ao criar listing (Supabase):", listingError);
+        toast.error(`Erro ao publicar anúncio: ${listingError.message}`);
         return;
       }
 
-      // ===== ETAPA 7: SUCESSO! =====
+      // ===== ETAPA 7: SUCESSO =====
       toast.success("Anúncio publicado com sucesso!");
-      
+
       setFormData({
         type: "vendo",
         category: "",
@@ -335,17 +293,15 @@ const Publish = () => {
         inclui_segunda_bateria: false,
       });
       setVideoFile(null);
-      setVideoPreview(null);
+      setVideoPreview("");
 
-      setTimeout(() => {
-        navigate("/");
-      }, 1500);
-
+      setTimeout(() => navigate("/"), 1500);
     } catch (error: any) {
       console.error("❌ Erro no processo de publicação:", error);
-      
       if (error.name === "ZodError") {
-        toast.error("Preencha todos os campos obrigatórios corretamente");
+        console.error("🧩 Zod issues:", error.issues);
+        const first = error.issues?.[0]?.message || "Preencha todos os campos obrigatórios corretamente";
+        toast.error(first);
       } else {
         toast.error(`Erro ao publicar: ${error.message || "Erro desconhecido"}`);
       }
