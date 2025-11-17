@@ -70,7 +70,6 @@ export const publishSchema = z.object({
     .positive("Preço deve ser positivo")
     .max(999999999, "Preço muito alto"),
   acceptsTrade: z.boolean(),
-  aceita_troca: z.boolean(),
   estado_conservacao: z.enum(["novo", "seminovo", "usado"], {
     errorMap: () => ({ message: "Estado de conservação é obrigatório" }),
   }),

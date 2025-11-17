@@ -171,7 +171,7 @@ const Publish = () => {
         estado: formData.estado || "SP",
         cidade: formData.cidade || "São Paulo",
         bairro: formData.bairro || null,
-        aceita_troca: formData.acceptsTrade,
+        acceptsTrade: formData.acceptsTrade,
       });
 
       // ===== ETAPA 3: VERIFICAR/CRIAR PERFIL =====
@@ -260,7 +260,7 @@ const Publish = () => {
         documentacao_em_dia: validatedData.documentacao_em_dia,
         licenciado: validatedData.licenciado,
         unico_dono: validatedData.unico_dono,
-        accepts_trade: validatedData.aceita_troca,
+        accepts_trade: validatedData.acceptsTrade,
         inclui_carregador: validatedData.inclui_carregador,
         inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
         state: validatedData.estado,
