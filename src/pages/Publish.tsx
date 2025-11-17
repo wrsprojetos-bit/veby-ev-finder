@@ -48,6 +48,8 @@ const Publish = () => {
     inclui_segunda_bateria: false,
   });
 
+  const [lastPayload, setLastPayload] = useState<any>(null);
+  const [lastDbError, setLastDbError] = useState<any>(null);
   const cities = useCities(formData.estado);
 
   useEffect(() => {
@@ -250,6 +252,7 @@ const Publish = () => {
         approved: true,
       } as const;
 
+      setLastPayload(listingPayload);
       console.log("📝 Insert payload (listings):", listingPayload);
       console.log("🧩 Insert columns:", Object.keys(listingPayload));
       console.log("🧪 Insert values:", Object.values(listingPayload));
@@ -258,11 +261,15 @@ const Publish = () => {
         .from("listings")
         .insert([listingPayload])
         .select()
-        .single();
+        .maybeSingle();
 
       if (listingError) {
+        setLastDbError(listingError);
         console.error("❌ Erro ao criar listing (Supabase):", listingError);
-        toast.error(`Erro ao publicar anúncio: ${listingError.message}`);
+        const code = (listingError as any).code || "unknown";
+        const details = (listingError as any).details || "";
+        const hint = (listingError as any).hint || "";
+        toast.error(`Erro ao publicar anúncio: ${listingError.message} (code: ${code}) ${details ? "- "+details : ""} ${hint ? "- "+hint : ""}`);
         return;
       }
 
@@ -796,6 +803,19 @@ const Publish = () => {
               "Publicar Anúncio"
             )}
           </Button>
+
+          {/* Debug temporário */}
+          {(lastDbError || lastPayload) && (
+            <div className="mt-4 p-3 rounded-md border border-border bg-muted/30 text-xs break-words">
+              <p className="font-semibold mb-2">Debug</p>
+              {lastDbError && (
+                <pre className="whitespace-pre-wrap mb-2">Erro: {JSON.stringify(lastDbError, null, 2)}</pre>
+              )}
+              {lastPayload && (
+                <pre className="whitespace-pre-wrap">Payload: {JSON.stringify(lastPayload, null, 2)}</pre>
+              )}
+            </div>
+          )}
         </form>
       </main>
 
