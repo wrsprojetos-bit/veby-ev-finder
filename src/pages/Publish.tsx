@@ -272,9 +272,11 @@ const Publish = () => {
         bairro: validatedData.bairro,
         inclui_carregador: validatedData.inclui_carregador,
         inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
-        state: profile.data?.location_state || '',
-        city: profile.data?.location_city || '',
-        location: `${profile.data?.location_city || ''}, ${profile.data?.location_state || ''}`.trim(),
+        state: (profile.data?.location_state ?? null),
+        city: (profile.data?.location_city ?? null),
+        location: (profile.data?.location_city && profile.data?.location_state)
+          ? `${profile.data.location_city}, ${profile.data.location_state}`
+          : (profile.data?.location_city || profile.data?.location_state || "Brasil"),
         status: "ativo",
         category: formData.category,
         latitude: latitude,
@@ -348,7 +350,7 @@ const Publish = () => {
         friendly = 'Erro ao publicar anúncio. Verifique os campos.';
       }
 
-      toast.error(`Não foi possível publicar o anúncio. Motivo: ${friendly}`);
+      toast.error(`Não foi possível publicar o anúncio. Motivo: ${friendly}${code ? ` (código: ${code})` : ''}`);
     }
   };
 
