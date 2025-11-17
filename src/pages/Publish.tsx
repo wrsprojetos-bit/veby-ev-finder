@@ -170,11 +170,38 @@ const Publish = () => {
       
       const validatedData = publishSchema.parse(validationData);
 
-      const { data: profile } = await supabase
+      // PASSO 1: Verificar/criar perfil ANTES do insert
+      let profile = await supabase
         .from("profiles")
         .select("location_state, location_city")
         .eq("id", user.id)
         .maybeSingle();
+
+      if (!profile.data) {
+        console.warn("⚠️ Perfil não existe! Criando automaticamente...");
+        const { error: profileError } = await supabase
+          .from("profiles")
+          .insert({
+            id: user.id,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || "Usuário",
+            location: "Brasil",
+            location_state: null,
+            location_city: null,
+          });
+
+        if (profileError) {
+          console.error("❌ Erro ao criar perfil:", profileError);
+          toast.error("Erro ao configurar sua conta. Faça logout e login novamente.");
+          return;
+        }
+
+        // Recarregar perfil após criação
+        profile = await supabase
+          .from("profiles")
+          .select("location_state, location_city")
+          .eq("id", user.id)
+          .maybeSingle();
+      }
 
       // PASSO 2: Capturar localização GPS ao criar anúncio
       let latitude: number | null = null;
@@ -201,9 +228,9 @@ const Publish = () => {
         console.warn("⚠️ GPS negado, usando geocoding por cidade/estado");
         
         // Se GPS falhar, usar geocoding aproximado por cidade/estado
-        if (profile?.location_city && profile?.location_state) {
+        if (profile.data?.location_city && profile.data?.location_state) {
           try {
-            const query = `${profile.location_city}, ${profile.location_state}, Brasil`;
+            const query = `${profile.data.location_city}, ${profile.data.location_state}, Brasil`;
             const response = await fetch(
               `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
               { headers: { 'User-Agent': 'VEBY-App/1.0' } }
@@ -245,9 +272,9 @@ const Publish = () => {
         bairro: validatedData.bairro,
         inclui_carregador: validatedData.inclui_carregador,
         inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
-        state: profile?.location_state || '',
-        city: profile?.location_city || '',
-        location: `${profile?.location_city || ''}, ${profile?.location_state || ''}`.trim(),
+        state: profile.data?.location_state || '',
+        city: profile.data?.location_city || '',
+        location: `${profile.data?.location_city || ''}, ${profile.data?.location_state || ''}`.trim(),
         status: "ativo",
         category: formData.category,
         latitude: latitude,
@@ -305,6 +332,8 @@ const Publish = () => {
         } else {
           friendly = 'Algum campo não atende às regras obrigatórias.';
         }
+      } else if (code === '23503' || all.includes('foreign key')) {
+        friendly = 'Erro ao vincular seu perfil. Faça logout e login novamente.';
       } else if (all.includes('row-level security') || all.includes('rls')) {
         friendly = 'Erro de permissão ao salvar anúncio. Faça login novamente.';
       } else if (code === '23502' || all.includes('not-null constraint')) {
