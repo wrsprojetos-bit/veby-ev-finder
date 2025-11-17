@@ -423,6 +423,65 @@ const Publish = () => {
             </Select>
           </div>
 
+          {/* Localização (obrigatória) */}
+          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-primary" />
+              <Label className="text-base font-semibold">
+                Localização <span className="text-destructive">*</span>
+              </Label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="estado">Estado</Label>
+                <Select
+                  value={formData.estado}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, estado: value, cidade: "" });
+                  }}
+                  required
+                >
+                  <SelectTrigger className={!formData.estado ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder="UF" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BRAZILIAN_STATES.map((state) => (
+                      <SelectItem key={state.uf} value={state.uf}>
+                        {state.uf} - {state.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cidade">Cidade</Label>
+                <Select
+                  value={formData.cidade}
+                  onValueChange={(value) => setFormData({ ...formData, cidade: value })}
+                  disabled={!formData.estado}
+                  required
+                >
+                  <SelectTrigger className={!formData.cidade ? "border-destructive/50" : ""}>
+                    <SelectValue placeholder={formData.estado ? "Selecione" : "Escolha o estado"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {formData.estado && formData.cidade && (
+              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                {formData.cidade}, {formData.estado}
+              </div>
+            )}
+          </div>
+
           {/* Tipo de Veículo (opcional) */}
           <div className="space-y-2">
             <Label htmlFor="tipo_veiculo" className="text-base font-semibold">
@@ -609,67 +668,7 @@ const Publish = () => {
             />
           </div>
 
-          {/* Localização */}
-          <div className="space-y-4 p-4 bg-muted/30 rounded-lg border border-border">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-primary" />
-              <Label className="text-base font-semibold">
-                Localização <span className="text-destructive">*</span>
-              </Label>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="estado">Estado</Label>
-                <Select
-                  value={formData.estado}
-                  onValueChange={(value) => {
-                    setFormData({ ...formData, estado: value, cidade: "" });
-                  }}
-                  required
-                >
-                  <SelectTrigger className={!formData.estado ? "border-destructive/50" : ""}>
-                    <SelectValue placeholder="UF" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BRAZILIAN_STATES.map((state) => (
-                      <SelectItem key={state.uf} value={state.uf}>
-                        {state.uf} - {state.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cidade">Cidade</Label>
-                <Select
-                  value={formData.cidade}
-                  onValueChange={(value) => setFormData({ ...formData, cidade: value })}
-                  disabled={!formData.estado}
-                  required
-                >
-                  <SelectTrigger className={!formData.cidade ? "border-destructive/50" : ""}>
-                    <SelectValue placeholder={formData.estado ? "Selecione" : "Escolha o estado"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cities.map((city) => (
-                      <SelectItem key={city} value={city}>
-                        {city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {formData.estado && formData.cidade && (
-              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                {formData.cidade}, {formData.estado}
-              </div>
-            )}
-          </div>
+          {/* Localização (duplicada removida - seção acima permanece) */}
 
           {/* Bairro */}
           <div className="space-y-2">
