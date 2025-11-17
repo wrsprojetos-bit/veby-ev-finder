@@ -129,25 +129,33 @@ export const useProximityFeed = ({
         radius_km: radiusKm,
         p_limit: limit,
         p_offset: offset
-      })
-      .select(`
-        *,
-        profiles:user_id (
-          name,
-          photo_url,
-          location,
-          verified
-        )
-      `)
-      .returns<Listing[]>();
+      });
 
     if (error) {
       console.error("Erro ao buscar por distância:", error);
       return { data: [], count: 0 };
     }
 
-    console.log(`✅ Encontrados ${data?.length || 0} anúncios dentro de ${radiusKm}km`);
-    return { data: data || [], count: data?.length || 0 };
+    // Buscar perfis separadamente
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map((l: any) => l.user_id))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id,name,photo_url,location,verified")
+        .in("id", userIds);
+
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      const listingsWithProfiles = data.map((listing: any) => ({
+        ...listing,
+        profiles: profilesMap.get(listing.user_id) || null
+      }));
+
+      console.log(`✅ Encontrados ${listingsWithProfiles.length} anúncios dentro de ${radiusKm}km`);
+      return { data: listingsWithProfiles, count: listingsWithProfiles.length };
+    }
+
+    console.log(`✅ Nenhum anúncio encontrado dentro de ${radiusKm}km`);
+    return { data: [], count: 0 };
   };
 
   // Buscar feed global (sem filtro de distância)
@@ -156,7 +164,7 @@ export const useProximityFeed = ({
 
     const query = supabase
       .from("listings")
-      .select("*, profiles:user_id(name, photo_url, location, verified)", { count: "exact" })
+      .select("*", { count: "exact" })
       .eq("status", "ativo")
       .eq("approved", true)
       .order("created_at", { ascending: false })
@@ -170,14 +178,30 @@ export const useProximityFeed = ({
       return { data: [], count: 0 };
     }
 
+    // Buscar perfis separadamente
+    let finalData = data || [];
+    if (data && data.length > 0) {
+      const userIds = [...new Set(data.map((l: any) => l.user_id))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id,name,photo_url,location,verified")
+        .in("id", userIds);
+
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+      finalData = data.map((listing: any) => ({
+        ...listing,
+        profiles: profilesMap.get(listing.user_id) || null
+      }));
+    }
+
     if (isReset) {
-      setListings(data || []);
+      setListings(finalData);
     } else {
-      setListings(prev => [...prev, ...(data || [])]);
+      setListings(prev => [...prev, ...finalData]);
     }
 
     setHasMore((count ?? 0) > (offset + PAGE_SIZE));
-    return { data, count };
+    return { data: finalData, count };
   };
 
   // Carregar dados
