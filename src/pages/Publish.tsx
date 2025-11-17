@@ -21,7 +21,7 @@ const Publish = () => {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string>("");
   const [formData, setFormData] = useState({
-    type: "",
+    type: "vendo",
     category: "",
     tipo_veiculo: "",
     title: "",
@@ -36,11 +36,13 @@ const Publish = () => {
     tempo_carga_horas: "",
     estado_conservacao: "",
     description: "",
+    estado: "",
+    cidade: "",
+    bairro: "",
     acceptsTrade: false,
     documentacao_em_dia: false,
     licenciado: false,
     unico_dono: false,
-    bairro: "",
     inclui_carregador: false,
     inclui_segunda_bateria: false,
   });
@@ -108,69 +110,71 @@ const Publish = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    // ===== ETAPA 1: VALIDAÇÕES INICIAIS =====
     if (!user) {
-      toast.error("Você precisa estar logado");
+      toast.error("Você precisa estar logado para publicar");
+      navigate("/auth");
       return;
     }
 
     if (!videoFile) {
-      toast.error("Adicione um vídeo ao seu anúncio");
+      toast.error("Selecione um vídeo para o anúncio");
       return;
     }
 
-    // VALIDAÇÃO CLIENT-SIDE ANTES DO ZOD
-    const requiredFields = [
-      { field: formData.type, name: "Tipo de anúncio" },
-      { field: formData.category, name: "Categoria" },
-      { field: formData.tipo_veiculo, name: "Tipo de veículo" },
-      { field: formData.title, name: "Título" },
-      { field: formData.brand, name: "Marca" },
-      { field: formData.model, name: "Modelo" },
-      { field: formData.ano, name: "Ano" },
-      { field: formData.capacidade_bateria, name: "Capacidade da bateria" },
-      { field: formData.potencia_motor, name: "Potência do motor" },
-      { field: formData.estado_conservacao, name: "Estado de conservação" },
-      { field: formData.price, name: "Preço" },
-    ];
+    // Validação de campos obrigatórios
+    const requiredFields = {
+      category: "Categoria",
+      tipo_veiculo: "Tipo de veículo",
+      title: "Título",
+      brand: "Marca",
+      model: "Modelo",
+      ano: "Ano",
+      price: "Preço",
+      capacidade_bateria: "Capacidade da bateria",
+      potencia_motor: "Potência do motor",
+      estado_conservacao: "Estado de conservação",
+    };
 
-    for (const { field, name } of requiredFields) {
-      if (!field || field === "") {
-        toast.error(`${name} é obrigatório`);
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field as keyof typeof formData]) {
+        toast.error(`Campo obrigatório: ${label}`);
         return;
       }
     }
 
     try {
+      // ===== ETAPA 2: VALIDAÇÃO ZOD =====
       const { publishSchema } = await import("@/schemas/validation");
-      const validationData = {
-        type: (formData.type || "").toLowerCase().trim(),
+      const validatedData = publishSchema.parse({
+        type: formData.type,
         category: formData.category,
         tipo_veiculo: formData.tipo_veiculo,
         title: formData.title,
-        price: formData.price ? parseFloat(formData.price) : 0,
         brand: formData.brand,
         model: formData.model,
         ano: formData.ano ? parseInt(formData.ano) : new Date().getFullYear(),
-        quilometragem_km: formData.quilometragem_km ? parseInt(formData.quilometragem_km) : null,
-        capacidade_bateria: formData.capacidade_bateria,
+        price: formData.price ? parseFloat(formData.price) : 0,
+        description: formData.description || null,
         autonomia_km: formData.autonomia_km ? parseInt(formData.autonomia_km) : null,
+        capacidade_bateria: formData.capacidade_bateria,
         potencia_motor: formData.potencia_motor,
         tempo_carga_horas: formData.tempo_carga_horas || null,
+        quilometragem_km: formData.quilometragem_km ? parseInt(formData.quilometragem_km) : null,
         estado_conservacao: formData.estado_conservacao,
-        description: formData.description || null,
-        acceptsTrade: formData.acceptsTrade,
-        documentacao_em_dia: formData.documentacao_em_dia || null,
-        licenciado: formData.licenciado || null,
-        unico_dono: formData.unico_dono || null,
-        bairro: formData.bairro || null,
+        documentacao_em_dia: formData.documentacao_em_dia || false,
+        licenciado: formData.licenciado || false,
+        unico_dono: formData.unico_dono || false,
         inclui_carregador: formData.inclui_carregador,
         inclui_segunda_bateria: formData.inclui_segunda_bateria,
-      };
-      
-      const validatedData = publishSchema.parse(validationData);
+        estado: formData.estado || "SP",
+        cidade: formData.cidade || "São Paulo",
+        bairro: formData.bairro || null,
+        aceita_troca: formData.acceptsTrade,
+      });
 
-      // PASSO 1: Verificar/criar perfil ANTES do insert
+      // ===== ETAPA 3: VERIFICAR/CRIAR PERFIL =====
       let profile = await supabase
         .from("profiles")
         .select("location_state, location_city")
@@ -178,24 +182,23 @@ const Publish = () => {
         .maybeSingle();
 
       if (!profile.data) {
-        console.warn("⚠️ Perfil não existe! Criando automaticamente...");
-        const { error: profileError } = await supabase
+        console.log("⚠️ Criando perfil automaticamente...");
+        const { error: createError } = await supabase
           .from("profiles")
-          .insert({
+          .insert([{
             id: user.id,
-            name: user.user_metadata?.name || user.email?.split('@')[0] || "Usuário",
-            location: "Brasil",
-            location_state: null,
-            location_city: null,
-          });
+            name: user.email?.split("@")[0] || "Usuário",
+            location: `${validatedData.cidade}, ${validatedData.estado}`,
+            location_city: validatedData.cidade,
+            location_state: validatedData.estado,
+          }]);
 
-        if (profileError) {
-          console.error("❌ Erro ao criar perfil:", profileError);
-          toast.error("Erro ao configurar sua conta. Faça logout e login novamente.");
+        if (createError) {
+          console.error("❌ Erro ao criar perfil:", createError);
+          toast.error("Erro ao criar perfil. Tente novamente.");
           return;
         }
 
-        // Recarregar perfil após criação
         profile = await supabase
           .from("profiles")
           .select("location_state, location_city")
@@ -203,154 +206,149 @@ const Publish = () => {
           .maybeSingle();
       }
 
-      // PASSO 2: Capturar localização GPS ao criar anúncio
+      // ===== ETAPA 4: UPLOAD DO VÍDEO (ANTES DE INSERIR NO BANCO) =====
+      toast.info("Fazendo upload do vídeo...");
+      
+      const tempListingId = crypto.randomUUID();
+      const uploadResult = await uploadVideoWithAssets(videoFile, tempListingId);
+
+      if (!uploadResult) {
+        toast.error("Não foi possível enviar o vídeo. Tente novamente.");
+        return;
+      }
+
+      // ===== ETAPA 5: OBTER COORDENADAS (OPCIONAL) =====
       let latitude: number | null = null;
       let longitude: number | null = null;
 
-      try {
-        // Primeiro, tentar pegar GPS do navegador
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          if (!navigator.geolocation) {
-            reject(new Error("GPS não disponível"));
-            return;
-          }
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            maximumAge: 300000,
-            enableHighAccuracy: false
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              timeout: 5000,
+              maximumAge: 300000,
+              enableHighAccuracy: false,
+            });
           });
-        });
-
-        latitude = position.coords.latitude;
-        longitude = position.coords.longitude;
-        console.log("📍 GPS capturado:", { latitude, longitude });
-      } catch (gpsError) {
-        console.warn("⚠️ GPS negado, usando geocoding por cidade/estado");
-        
-        // Se GPS falhar, usar geocoding aproximado por cidade/estado
-        if (profile.data?.location_city && profile.data?.location_state) {
-          try {
-            const query = `${profile.data.location_city}, ${profile.data.location_state}, Brasil`;
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
-              { headers: { 'User-Agent': 'VEBY-App/1.0' } }
-            );
-            const geocodeData = await response.json();
-            
-            if (geocodeData && geocodeData.length > 0) {
-              latitude = parseFloat(geocodeData[0].lat);
-              longitude = parseFloat(geocodeData[0].lon);
-              console.log("📍 Geocoding aproximado:", { latitude, longitude });
-            }
-          } catch (geocodeError) {
-            console.error("Erro no geocoding:", geocodeError);
-          }
+          latitude = position.coords.latitude;
+          longitude = position.coords.longitude;
+          console.log("📍 GPS capturado:", { latitude, longitude });
+        } catch {
+          console.log("GPS não disponível");
         }
       }
 
-      // Monta payload do insert e registra para diagnóstico
-      const payload = {
+      // ===== ETAPA 6: INSERIR NO BANCO COM PAYLOAD LIMPO =====
+      const listingPayload = {
+        id: tempListingId,
         user_id: user.id,
         type: validatedData.type,
+        category: validatedData.category,
         tipo_veiculo: validatedData.tipo_veiculo,
         brand_model: `${validatedData.brand} ${validatedData.model}`.trim(),
         marca: validatedData.brand,
         modelo: validatedData.model,
         ano: validatedData.ano,
-        quilometragem_km: validatedData.quilometragem_km,
-        capacidade_bateria: validatedData.capacidade_bateria,
-        autonomia_km: validatedData.autonomia_km,
-        potencia_motor: validatedData.potencia_motor,
-        tempo_carga_horas: validatedData.tempo_carga_horas,
-        estado_conservacao: validatedData.estado_conservacao,
         price: validatedData.price,
         description: validatedData.description,
-        accepts_trade: validatedData.acceptsTrade,
+        autonomia_km: validatedData.autonomia_km,
+        capacidade_bateria: validatedData.capacidade_bateria,
+        potencia_motor: validatedData.potencia_motor,
+        tempo_carga_horas: validatedData.tempo_carga_horas,
+        quilometragem_km: validatedData.quilometragem_km,
+        estado_conservacao: validatedData.estado_conservacao,
         documentacao_em_dia: validatedData.documentacao_em_dia,
         licenciado: validatedData.licenciado,
         unico_dono: validatedData.unico_dono,
-        bairro: validatedData.bairro,
+        accepts_trade: validatedData.aceita_troca,
         inclui_carregador: validatedData.inclui_carregador,
         inclui_segunda_bateria: validatedData.inclui_segunda_bateria,
-        state: (profile.data?.location_state ?? null),
-        city: (profile.data?.location_city ?? null),
-        location: (profile.data?.location_city && profile.data?.location_state)
-          ? `${profile.data.location_city}, ${profile.data.location_state}`
-          : (profile.data?.location_city || profile.data?.location_state || "Brasil"),
-        status: "ativo",
-        category: formData.category,
+        state: validatedData.estado,
+        city: validatedData.cidade,
+        bairro: validatedData.bairro,
+        location: `${validatedData.cidade}, ${validatedData.estado}`,
         latitude: latitude,
         longitude: longitude,
-      } as const;
+        video_url: uploadResult.videoUrl,
+        thumbnail_url: uploadResult.thumbnailUrl,
+        preview_url: uploadResult.previewUrl,
+        video_duration: uploadResult.duration,
+        video_size: uploadResult.size,
+        status: "ativo",
+        approved: true,
+      };
 
-      console.debug("🧪 Insert payload (listings)", payload);
+      console.log("📝 Inserindo listing:", listingPayload);
 
       const { data: listing, error: listingError } = await supabase
         .from("listings")
-        .insert(payload)
+        .insert([listingPayload])
         .select()
         .single();
 
-      if (listingError) throw listingError;
-
-      const uploadResult = await uploadVideoWithAssets(
-        videoFile,
-        listing.id
-      );
-
-      if (!uploadResult) {
-        await supabase.from("listings").delete().eq("id", listing.id);
-        throw new Error("Erro ao fazer upload do vídeo");
-      }
-
-      const { error: updateError } = await supabase
-        .from("listings")
-        .update({
-          video_url: uploadResult.videoUrl,
-          video_thumbnail: uploadResult.thumbnailUrl,
-          video_preview: uploadResult.previewUrl,
-        })
-        .eq("id", listing.id);
-
-      if (updateError) throw updateError;
-
-      toast.success("Anúncio publicado com sucesso!");
-      navigate("/");
-    } catch (error) {
-      const code = (error && (error.code || error.status || error.name)) || undefined;
-      const msg: string = error?.message || "";
-      const details: string = error?.details || "";
-      const hint: string = error?.hint || "";
-      console.error("🔴 Erro detalhado do backend (listings.insert)", { code, msg, details, hint, error });
-
-      let friendly = "";
-      const all = `${msg} ${details} ${hint}`.toLowerCase();
-
-      if (code === '23514' || all.includes('check constraint')) {
-        if (all.includes('listings_type_check')) {
-          friendly = 'Tipo de anúncio inválido. Selecione Vendo, Troco ou Procuro.';
-        } else if (all.includes('status')) {
-          friendly = 'Status inválido. Tente novamente.';
-        } else {
-          friendly = 'Algum campo não atende às regras obrigatórias.';
+      if (listingError) {
+        console.error("❌ Erro ao criar listing:", listingError);
+        
+        let errorMessage = "Erro ao publicar anúncio.";
+        
+        if (listingError.code === "23514") {
+          errorMessage = "Tipo de anúncio inválido. Use 'vendo', 'troco' ou 'procuro'.";
+        } else if (listingError.code === "23502") {
+          errorMessage = `Campo obrigatório: ${listingError.message}`;
+        } else if (listingError.code === "22P02") {
+          errorMessage = "Formato de dado inválido. Verifique números e datas.";
+        } else if (listingError.message?.includes("row-level security")) {
+          errorMessage = "Erro de permissão. Faça login novamente.";
         }
-      } else if (code === '23503' || all.includes('foreign key')) {
-        friendly = 'Erro ao vincular seu perfil. Faça logout e login novamente.';
-      } else if (all.includes('row-level security') || all.includes('rls')) {
-        friendly = 'Erro de permissão ao salvar anúncio. Faça login novamente.';
-      } else if (code === '23502' || all.includes('not-null constraint')) {
-        const m = msg.match(/column \"([^\"]+)\"/i);
-        const col = m?.[1] || 'campo obrigatório';
-        friendly = `Preencha o campo ${col}.`;
-      } else if (code === '22P02' || all.includes('invalid input syntax')) {
-        friendly = 'Tipo de dado inválido. Verifique números (Ano, Preço, Autonomia).';
-      } else if (msg) {
-        friendly = msg;
-      } else {
-        friendly = 'Erro ao publicar anúncio. Verifique os campos.';
+        
+        toast.error(`${errorMessage} (código: ${listingError.code || 'desconhecido'})`);
+        return;
       }
 
-      toast.error(`Não foi possível publicar o anúncio. Motivo: ${friendly}${code ? ` (código: ${code})` : ''}`);
+      // ===== ETAPA 7: SUCESSO! =====
+      toast.success("Anúncio publicado com sucesso!");
+      
+      setFormData({
+        type: "vendo",
+        category: "",
+        tipo_veiculo: "",
+        title: "",
+        price: "",
+        brand: "",
+        model: "",
+        ano: "",
+        quilometragem_km: "",
+        capacidade_bateria: "",
+        autonomia_km: "",
+        potencia_motor: "",
+        tempo_carga_horas: "",
+        estado_conservacao: "",
+        description: "",
+        estado: "",
+        cidade: "",
+        bairro: "",
+        acceptsTrade: false,
+        documentacao_em_dia: false,
+        licenciado: false,
+        unico_dono: false,
+        inclui_carregador: false,
+        inclui_segunda_bateria: false,
+      });
+      setVideoFile(null);
+      setVideoPreview(null);
+
+      setTimeout(() => {
+        navigate("/");
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("❌ Erro no processo de publicação:", error);
+      
+      if (error.name === "ZodError") {
+        toast.error("Preencha todos os campos obrigatórios corretamente");
+      } else {
+        toast.error(`Erro ao publicar: ${error.message || "Erro desconhecido"}`);
+      }
     }
   };
 
