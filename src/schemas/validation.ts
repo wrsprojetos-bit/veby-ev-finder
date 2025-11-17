@@ -70,6 +70,7 @@ export const publishSchema = z.object({
     .positive("Preço deve ser positivo")
     .max(999999999, "Preço muito alto"),
   acceptsTrade: z.boolean(),
+  aceita_troca: z.boolean(),
   estado_conservacao: z.enum(["novo", "seminovo", "usado"], {
     errorMap: () => ({ message: "Estado de conservação é obrigatório" }),
   }),
@@ -121,6 +122,14 @@ export const publishSchema = z.object({
   inclui_segunda_bateria: z.boolean(),
   
   // Localização
+  estado: z.string()
+    .min(2, "Estado é obrigatório")
+    .max(2, "Use a sigla do estado (ex: SP)")
+    .trim(),
+  cidade: z.string()
+    .min(1, "Cidade é obrigatória")
+    .max(100, "Cidade deve ter no máximo 100 caracteres")
+    .trim(),
   bairro: z.string()
     .max(100, "Bairro deve ter no máximo 100 caracteres")
     .trim()
