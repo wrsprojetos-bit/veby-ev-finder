@@ -36,6 +36,7 @@ export const signInSchema = z.object({
 
 // Publish listing schema - focado em veículos elétricos
 export const publishSchema = z.object({
+  // Campos obrigatórios VISÍVEIS NA UI
   type: z.enum(["vendo", "troco", "procuro"], {
     errorMap: () => ({ message: "Tipo inválido" }),
   }),
@@ -43,97 +44,48 @@ export const publishSchema = z.object({
     .min(1, "Categoria é obrigatória")
     .max(50, "Categoria deve ter no máximo 50 caracteres")
     .trim(),
-  // Campos básicos
-  tipo_veiculo: z.enum([
-    "bike_eletrica",
-    "patinete_eletrico", 
-    "scooter_eletrica",
-    "moto_eletrica",
-    "carro_eletrico_ou_hibrido_plug_in",
-    "hoverboard_skate_eletrico",
-    "monociclo_eletrico",
-    "quadriciclo_kart_eletrico",
-    "outro_eletrico_pessoal"
-  ], {
-    errorMap: () => ({ message: "Tipo de veículo é obrigatório" }),
-  }),
   title: z.string()
-    .min(5, "Título deve ter pelo menos 5 caracteres")
+    .min(3, "Título deve ter pelo menos 3 caracteres")
     .max(100, "Título deve ter no máximo 100 caracteres")
     .trim(),
-  description: z.string()
-    .max(2000, "Descrição deve ter no máximo 2000 caracteres")
-    .trim()
-    .optional()
-    .nullable(),
   price: z.number()
     .positive("Preço deve ser positivo")
     .max(999999999, "Preço muito alto"),
-  acceptsTrade: z.boolean(),
-  estado_conservacao: z.enum(["novo", "seminovo", "usado"], {
-    errorMap: () => ({ message: "Estado de conservação é obrigatório" }),
-  }),
-  
-  // Campos técnicos de veículo elétrico
-  brand: z.string()
-    .min(1, "Marca é obrigatória")
-    .max(50, "Marca deve ter no máximo 50 caracteres")
+  description: z.string()
+    .min(1, "Descrição é obrigatória")
+    .max(2000, "Descrição deve ter no máximo 2000 caracteres")
     .trim(),
-  model: z.string()
-    .min(1, "Modelo é obrigatório")
-    .max(50, "Modelo deve ter no máximo 50 caracteres")
-    .trim(),
-  ano: z.number()
-    .int("Ano deve ser um número inteiro")
-    .min(1990, "Ano deve ser 1990 ou posterior")
-    .max(new Date().getFullYear() + 1, "Ano não pode ser no futuro"),
-  quilometragem_km: z.number()
-    .int("Quilometragem deve ser um número inteiro")
-    .min(0, "Quilometragem deve ser positiva")
-    .optional()
-    .nullable(),
-  capacidade_bateria: z.string()
-    .min(1, "Capacidade da bateria é obrigatória")
-    .max(50, "Capacidade deve ter no máximo 50 caracteres")
-    .trim(),
-  autonomia_km: z.number()
-    .int("Autonomia deve ser um número inteiro")
-    .positive("Autonomia deve ser positiva")
-    .optional()
-    .nullable(),
-  potencia_motor: z.string()
-    .min(1, "Potência do motor é obrigatória")
-    .max(50, "Potência deve ter no máximo 50 caracteres")
-    .trim(),
-  tempo_carga_horas: z.string()
-    .max(50, "Tempo de carga deve ter no máximo 50 caracteres")
-    .trim()
-    .optional()
-    .nullable(),
-  
-  // Campos de documentação
-  documentacao_em_dia: z.boolean().optional().nullable(),
-  licenciado: z.boolean().optional().nullable(),
-  unico_dono: z.boolean().optional().nullable(),
-  
-  // Extras
-  inclui_carregador: z.boolean(),
-  inclui_segunda_bateria: z.boolean(),
-  
-  // Localização
-  estado: z.string()
+  location_state: z.string()
     .min(2, "Estado é obrigatório")
     .max(2, "Use a sigla do estado (ex: SP)")
     .trim(),
-  cidade: z.string()
+  location_city: z.string()
     .min(1, "Cidade é obrigatória")
     .max(100, "Cidade deve ter no máximo 100 caracteres")
     .trim(),
-  bairro: z.string()
-    .max(100, "Bairro deve ter no máximo 100 caracteres")
-    .trim()
-    .optional()
-    .nullable(),
+  video_url: z.string()
+    .url("URL de vídeo inválida"),
+
+  // Campos opcionais
+  brand: z.string().max(50, "Marca deve ter no máximo 50 caracteres").trim().optional().nullable(),
+  model: z.string().max(50, "Modelo deve ter no máximo 50 caracteres").trim().optional().nullable(),
+  year: z.number().int("Ano deve ser inteiro").min(1900, "Ano inválido").max(new Date().getFullYear() + 1, "Ano não pode ser no futuro").optional().nullable(),
+  acceptsTrade: z.boolean().optional().nullable().default(false),
+
+  // Qualquer outro campo extra deve ser opcional
+  tipo_veiculo: z.string().optional().nullable(),
+  quilometragem_km: z.number().int().min(0).optional().nullable(),
+  capacidade_bateria: z.string().max(50).trim().optional().nullable(),
+  autonomia_km: z.number().int().min(0).optional().nullable(),
+  potencia_motor: z.string().max(50).trim().optional().nullable(),
+  tempo_carga_horas: z.string().max(50).trim().optional().nullable(),
+  estado_conservacao: z.enum(["novo", "seminovo", "usado"]).optional().nullable(),
+  bairro: z.string().max(100).trim().optional().nullable(),
+  documentacao_em_dia: z.boolean().optional().nullable(),
+  licenciado: z.boolean().optional().nullable(),
+  unico_dono: z.boolean().optional().nullable(),
+  inclui_carregador: z.boolean().optional().nullable(),
+  inclui_segunda_bateria: z.boolean().optional().nullable(),
 });
 
 // Report schema
