@@ -10,6 +10,7 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { LocationSelector } from "@/components/LocationSelector";
 import { useProximityFeed } from "@/hooks/useProximityFeed";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -26,7 +27,7 @@ const Index = () => {
   const userCity = selectedCity || location.city;
   const userState = selectedState || location.state;
   const {
-    listings: recommendations,
+    listings: baseRecommendations,
     loading,
     isLoadingMore,
     hasMore,
@@ -40,27 +41,82 @@ const Index = () => {
     enabled: true
   });
 
+  const [recommendations, setRecommendations] = useState(
+    baseRecommendations ?? []
+  );
+
+  useEffect(() => {
+    if (baseRecommendations && baseRecommendations.length > 0 && recommendations.length === 0) {
+      setRecommendations(baseRecommendations);
+    }
+  }, [baseRecommendations, recommendations.length]);
+
   const displayListings = recommendations;
+
+  // Função auxiliar para buscar anúncio específico por ID
+  const fetchListingById = async (id: string) => {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      console.error("FEED_DEBUG erro no Supabase ao buscar listing por id", error);
+      return null;
+    }
+
+    return data;
+  };
 
   // Posicionar feed no anúncio correto quando vindo do Explore
   useEffect(() => {
-    // Aguardar recommendations carregar
     if (!recommendations || recommendations.length === 0) return;
-    
-    const listingIdFromUrl = searchParams.get('listing');
+
+    const listingIdFromUrl = searchParams.get("listing");
+    console.log("FEED_DEBUG listingIdFromUrl =", listingIdFromUrl);
+    console.log(
+      "FEED_DEBUG recommendations IDs =",
+      recommendations.map((r) => r.id)
+    );
+
     if (!listingIdFromUrl) return;
-    
-    // Procurar o índice do anúncio na lista
-    const index = recommendations.findIndex(l => l.id === listingIdFromUrl);
-    
-    // Se encontrou, posicionar o feed nesse índice
+
+    const index = recommendations.findIndex(
+      (r) => r.id === listingIdFromUrl
+    );
+    console.log("FEED_DEBUG index found =", index);
+
     if (index >= 0) {
+      // Caso 1: o anúncio já está na lista de recomendações
       setCurrentIndex(index);
-      
-      // Limpar o parâmetro da URL após posicionar
-      setSearchParams({}, { replace: true });
+    } else {
+      // Caso 2: o anúncio NÃO está em recommendations
+      fetchListingById(listingIdFromUrl)
+        .then((listing) => {
+          if (!listing) return;
+
+          // Evitar duplicar se já tiver esse id
+          const filtered = recommendations.filter(
+            (r) => r.id !== listing.id
+          );
+          const newList = [listing, ...filtered];
+
+          setRecommendations(newList);
+          setCurrentIndex(0);
+        })
+        .catch((err) => {
+          console.error(
+            "FEED_DEBUG erro ao buscar listing específico",
+            err
+          );
+        });
     }
-  }, [recommendations.length, searchParams.get('listing')]);
+
+    // depois de posicionar, limpar o parâmetro da URL (sem recarregar)
+    searchParams.delete("listing");
+    setSearchParams(searchParams, { replace: true });
+  }, [recommendations, searchParams, setSearchParams]);
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
