@@ -117,7 +117,7 @@ export const useGeolocation = () => {
           .from('profiles')
           .select('location_state, location_city, location_lat, location_lng')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
         
         if (data?.location_state && data?.location_city) {
           setLocation({

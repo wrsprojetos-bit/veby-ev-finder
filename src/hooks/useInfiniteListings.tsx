@@ -51,15 +51,7 @@ export const useInfiniteListings = ({
 
       let query = supabase
         .from("listings")
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            photo_url,
-            location,
-            verified
-          )
-        `)
+        .select("*")
         .eq("status", "ativo")
         .eq("approved", true);
 
@@ -92,16 +84,31 @@ export const useInfiniteListings = ({
 
       if (error) throw error;
 
-      const newListings = data || [];
+      const baseListings = data || [];
+
+      // Buscar perfis separadamente e mesclar
+      let finalListings = baseListings;
+      if (baseListings.length > 0) {
+        const userIds = [...new Set(baseListings.map((l: any) => l.user_id))];
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id,name,photo_url,location,verified")
+          .in("id", userIds);
+        const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+        finalListings = baseListings.map((l: any) => ({
+          ...l,
+          profiles: profilesMap.get(l.user_id) || null,
+        }));
+      }
       
       if (isReset) {
-        setListings(newListings);
+        setListings(finalListings);
       } else {
-        setListings((prev) => [...prev, ...newListings]);
+        setListings((prev) => [...prev, ...finalListings]);
       }
 
       // Se retornou menos que LIMIT, acabou
-      setHasMore(newListings.length === LIMIT);
+      setHasMore(baseListings.length === LIMIT);
       
     } catch (error) {
       console.error("Erro ao carregar anúncios:", error);
