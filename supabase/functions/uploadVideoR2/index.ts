@@ -50,28 +50,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify user owns the listing
-    const { data: listing, error: listingError } = await supabaseClient
-      .from("listings")
-      .select("user_id")
-      .eq("id", listingId)
-      .single();
-
-    if (listingError || !listing) {
-      console.error("Listing not found:", listingError);
-      return new Response(
-        JSON.stringify({ error: "Anúncio não encontrado" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 404 }
-      );
-    }
-
-    if (listing.user_id !== user.id) {
-      console.error("User does not own listing:", { userId: user.id, listingUserId: listing.user_id });
-      return new Response(
-        JSON.stringify({ error: "Você não tem permissão para fazer upload neste anúncio" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403 }
-      );
-    }
+    // Note: Não verificamos se o listing existe aqui pois o vídeo é enviado ANTES 
+    // de criar o listing no banco. O listing será criado logo após o upload com o mesmo ID.
 
     // Validate file type
     const allowedMimeTypes = ["video/mp4", "video/quicktime", "video/webm"];
