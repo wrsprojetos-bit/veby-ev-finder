@@ -58,42 +58,64 @@ export const VehicleCard = ({
   const [isVisible, setIsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
+  // Pausar outros vídeos quando este tocar
+  const pauseOtherVideos = (current?: HTMLVideoElement | null) => {
+    const videos = document.querySelectorAll<HTMLVideoElement>('video.feed-video');
+    videos.forEach((v) => {
+      if (v !== current) {
+        try { v.pause(); } catch {}
+      }
+    });
+  };
+  
   // Rastrear visualização
   useViewTracking(listingId, isVisible && variant === "feed");
 
   // Auto-play video when in view (TikTok style)
   useEffect(() => {
-    if (variant !== "feed" || !videoRef.current || !videoUrl) return;
-    
+    if (variant !== 'feed' || !videoRef.current || !videoUrl) return;
     const video = videoRef.current;
+    // Garantir muted antes de tentar tocar
+    video.muted = true;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-            // Vídeo entrou na tela - dar play
-            setIsVisible(true);
-            video.play().catch(() => {
-              console.log('Autoplay bloqueado, vídeo já está muted');
-            });
-          } else {
-            // Vídeo saiu da tela - pausar
-            setIsVisible(false);
-            video.pause();
-            video.currentTime = 0;
-          }
+    const tryPlay = () => {
+      console.log('TRY_PLAY', { listingId, muted: video.muted, readyState: video.readyState, src: video.src });
+      pauseOtherVideos(video);
+      const p = video.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => {
+          console.log('PLAY_OK', { listingId });
+        }).catch((err) => {
+          console.error('ERRO AO DAR PLAY NO VIDEO', err);
         });
-      },
-      { threshold: 0.5 }
-    );
+      }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          setIsVisible(true);
+          tryPlay();
+        } else {
+          setIsVisible(false);
+          try { video.pause(); } catch {}
+          try { video.currentTime = 0; } catch {}
+        }
+      });
+    }, { threshold: 0.5 });
 
     observer.observe(video);
 
     return () => {
       observer.disconnect();
-      video.pause();
+      try { video.pause(); } catch {}
     };
   }, [variant, videoUrl, listingId]);
+
+  // Logar URL para depuração
+  useEffect(() => {
+    console.log('VIDEO_URL_DINAMICO', videoUrl);
+  }, [videoUrl]);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -189,20 +211,28 @@ export const VehicleCard = ({
           style={{ aspectRatio: '9/16' }}
         >
           {videoUrl ? (
-            <video
-              ref={videoRef}
-              src={videoUrl}
-              className="w-full h-full object-cover"
-              style={{ aspectRatio: '9/16' }}
-              loop
-              muted
-              playsInline
-              autoPlay
-              preload="auto"
-              poster={image}
-              disablePictureInPicture
-              {...(isPriority && { fetchpriority: 'high' as any })}
-            />
+            <>
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                className="w-full h-full object-cover feed-video"
+                style={{ aspectRatio: '9/16' }}
+                loop
+                muted
+                playsInline
+                autoPlay
+                preload="auto"
+                poster={image}
+                disablePictureInPicture
+                onPlay={() => pauseOtherVideos(videoRef.current)}
+                {...(isPriority && { fetchpriority: 'high' as any })}
+              />
+              {videoUrl && (
+                <div className="absolute left-2 bottom-2 z-20 bg-black/60 text-white text-[10px] px-2 py-1 rounded max-w-[90%] break-all">
+                  {videoUrl}
+                </div>
+              )}
+            </>
           ) : (
             <img
               src={image}
