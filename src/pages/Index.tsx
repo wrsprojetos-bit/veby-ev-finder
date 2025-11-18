@@ -185,18 +185,6 @@ const Index = () => {
 
       {/* Content */}
       <main className="pt-14 md:ml-64">
-        {/* DEBUG: Vídeo fixo para testar autoplay */}
-        <div className="p-4">
-          <video
-            src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-            autoPlay
-            muted
-            playsInline
-            loop
-            preload="auto"
-            style={{ width: '100%', height: '300px', objectFit: 'cover', border: '1px solid red' }}
-          />
-        </div>
         {viewMode === "feed" ? (
           <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:snap-y md:snap-mandatory" data-scroll-root="true" id="feed-scroll">
             <div className="md:flex md:flex-col md:items-center md:justify-start md:h-full">
