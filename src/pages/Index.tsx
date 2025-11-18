@@ -3,7 +3,7 @@ import vebyLogo from "@/assets/veby-logo-new.png";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
-import { LayoutGrid, List, LogIn, Search } from "lucide-react";
+import { LogIn, Search, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -12,7 +12,7 @@ import { useProximityFeed } from "@/hooks/useProximityFeed";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
 
 const Index = () => {
-  const [viewMode, setViewMode] = useState<"feed" | "list">("feed");
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
@@ -59,6 +59,28 @@ const Index = () => {
     }
   }, [location]);
 
+  // Navegação por teclado (desktop)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (window.innerWidth >= 768) { // só desktop
+        if (e.key === "ArrowDown" && currentIndex < recommendations.length - 1) {
+          setCurrentIndex(prev => prev + 1);
+        } else if (e.key === "ArrowUp" && currentIndex > 0) {
+          setCurrentIndex(prev => prev - 1);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIndex, recommendations.length]);
+
+  // Carregar mais quando chegar perto do final
+  useEffect(() => {
+    if (currentIndex >= recommendations.length - 3 && hasMore && !isLoadingMore) {
+      loadMore();
+    }
+  }, [currentIndex, recommendations.length, hasMore, isLoadingMore, loadMore]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -101,8 +123,12 @@ const Index = () => {
         </div>
         
         <nav className="flex-1 space-y-1">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-[#00FF7F] font-semibold">
-            <LayoutGrid className="w-6 h-6" />
+          <button 
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-white/10 transition-colors text-white font-medium"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+            </svg>
             <span>Para Você</span>
           </button>
           <button 
@@ -159,96 +185,90 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Desktop Header - Top right buttons */}
-      <header className="hidden md:flex fixed top-0 right-0 z-40 p-4 gap-3">
+      {/* Desktop Navigation Controls */}
+      <div className="hidden md:flex fixed right-8 top-1/2 -translate-y-1/2 z-40 flex-col gap-4">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setViewMode(viewMode === "feed" ? "list" : "feed")}
-          className="hover:bg-white/10 text-white"
+          onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+          disabled={currentIndex === 0}
+          className="hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          {viewMode === "feed" ? (
-            <List className="w-5 h-5" />
-          ) : (
-            <LayoutGrid className="w-5 h-5" />
-          )}
+          <ChevronUp className="w-6 h-6" />
         </Button>
-        {!user && (
-          <Button
-            onClick={() => navigate("/auth")}
-            className="bg-[#00FF7F] text-black hover:bg-[#00FF7F]/90"
-          >
-            Entrar
-          </Button>
-        )}
-      </header>
+        <div className="text-white/60 text-xs text-center">
+          {currentIndex + 1} / {recommendations.length}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setCurrentIndex(prev => Math.min(recommendations.length - 1, prev + 1))}
+          disabled={currentIndex >= recommendations.length - 1}
+          className="hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <ChevronDown className="w-6 h-6" />
+        </Button>
+      </div>
 
       {/* Content */}
-      <main className="pt-14 md:ml-64">
-        {viewMode === "feed" ? (
-          <div className="snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] md:h-screen feed-scroll md:snap-y md:snap-mandatory" data-scroll-root="true" id="feed-scroll">
-            <div className="md:flex md:flex-col md:items-center md:justify-start md:h-full">
-              {recommendations.map((listing, index) => (
-                <VehicleCard 
-                  key={listing.id}
-                  id={listing.id}
-                  title={listing.brand_model}
-                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                  location={`${listing.city || ''}, ${listing.state || ''}`}
-                  distance={listing.distance_km ? `${listing.distance_km.toFixed(1)} km` : "--"}
-                  views={listing.views}
-                  image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-                  videoUrl={listing.video_url}
-                  category={listing.category}
-                  acceptsTrade={listing.accepts_trade}
-                  variant="feed"
-                  sellerId={listing.user_id}
-                  listingId={listing.id}
-                  sellerName={listing.profiles?.name}
-                  sellerAvatar={listing.profiles?.photo_url}
-                  recommendationReason={listing.recommendation_reason}
-                  isPriority={index === 0}
-                />
-              ))}
-              <InfiniteScrollTrigger 
-                onLoadMore={loadMore}
-                isLoading={isLoadingMore}
-                hasMore={hasMore}
+      <main className="pt-14 md:pt-0 md:ml-64">
+        {/* Mobile: Feed vertical com scroll */}
+        <div className="md:hidden snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] feed-scroll" data-scroll-root="true">
+          {recommendations.map((listing) => (
+            <VehicleCard 
+              key={listing.id}
+              id={listing.id}
+              title={listing.brand_model}
+              price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+              location={`${listing.city || ''}, ${listing.state || ''}`}
+              distance={listing.distance_km ? `${listing.distance_km.toFixed(1)} km` : "--"}
+              views={listing.views}
+              image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+              videoUrl={listing.video_url}
+              category={listing.category}
+              acceptsTrade={listing.accepts_trade}
+              variant="feed"
+              sellerId={listing.user_id}
+              listingId={listing.id}
+              sellerName={listing.profiles?.name}
+              sellerAvatar={listing.profiles?.photo_url}
+              recommendationReason={listing.recommendation_reason}
+            />
+          ))}
+          <InfiniteScrollTrigger 
+            onLoadMore={loadMore}
+            isLoading={isLoadingMore}
+            hasMore={hasMore}
+          />
+        </div>
+
+        {/* Desktop: Um vídeo único, centralizado, estilo TikTok */}
+        <div className="hidden md:flex items-center justify-center h-screen overflow-hidden">
+          {recommendations[currentIndex] && (
+            <div className="relative w-full h-full flex items-center justify-center">
+              <VehicleCard 
+                key={recommendations[currentIndex].id}
+                id={recommendations[currentIndex].id}
+                title={recommendations[currentIndex].brand_model}
+                price={`R$ ${recommendations[currentIndex].price?.toFixed(2).replace('.', ',')}`}
+                location={`${recommendations[currentIndex].city || ''}, ${recommendations[currentIndex].state || ''}`}
+                distance={recommendations[currentIndex].distance_km ? `${recommendations[currentIndex].distance_km.toFixed(1)} km` : "--"}
+                views={recommendations[currentIndex].views}
+                image={recommendations[currentIndex].thumbnail_url || recommendations[currentIndex].images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                videoUrl={recommendations[currentIndex].video_url}
+                category={recommendations[currentIndex].category}
+                acceptsTrade={recommendations[currentIndex].accepts_trade}
+                variant="feed"
+                sellerId={recommendations[currentIndex].user_id}
+                listingId={recommendations[currentIndex].id}
+                sellerName={recommendations[currentIndex].profiles?.name}
+                sellerAvatar={recommendations[currentIndex].profiles?.photo_url}
+                recommendationReason={recommendations[currentIndex].recommendation_reason}
+                isPriority={true}
               />
             </div>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-3 p-4 pt-[280px] md:pt-4">
-              {recommendations.map((listing) => (
-                <VehicleCard 
-                  key={listing.id}
-                  id={listing.id}
-                  title={listing.brand_model}
-                  price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-                  location={`${listing.city || ''}, ${listing.state || ''}`}
-                  distance={listing.distance_km ? `${listing.distance_km.toFixed(1)} km` : "--"}
-                  views={listing.views}
-                  image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-                  videoUrl={listing.video_url}
-                  category={listing.category}
-                  acceptsTrade={listing.accepts_trade}
-                  variant="list"
-                  sellerId={listing.user_id}
-                  listingId={listing.id}
-                  sellerName={listing.profiles?.name}
-                  sellerAvatar={listing.profiles?.photo_url}
-                  recommendationReason={listing.recommendation_reason}
-                />
-              ))}
-            </div>
-            <InfiniteScrollTrigger 
-              onLoadMore={loadMore}
-              isLoading={isLoadingMore}
-              hasMore={hasMore}
-            />
-          </>
-        )}
+          )}
+        </div>
       </main>
 
       <LocationSelector 
