@@ -71,87 +71,11 @@ export const VehicleCard = ({
   // Rastrear visualização
   useViewTracking(listingId, isVisible && variant === "feed");
 
-  // Auto-play video when in view (TikTok style)
+  // Autoplay simples: garantir muted e não usar IntersectionObserver
   useEffect(() => {
-    if (variant !== 'feed' || !videoRef.current || !videoUrl) return;
-    const video = videoRef.current;
-    video.muted = true;
-
-    let isInView = false;
-
-    const tryPlay = () => {
-      console.log('🎬 TRY_PLAY', { 
-        listingId, 
-        muted: video.muted, 
-        readyState: video.readyState,
-        networkState: video.networkState,
-        src: video.src,
-        currentSrc: video.currentSrc
-      });
-
-      // Só tenta dar play se o vídeo estiver carregado
-      if (video.readyState >= 3) { // HAVE_FUTURE_DATA
-        pauseOtherVideos(video);
-        video.play().then(() => {
-          console.log('✅ PLAY_OK', { listingId });
-        }).catch((err) => {
-          console.error('❌ ERRO_PLAY', { listingId, error: err.name, message: err.message });
-        });
-      } else {
-        console.log('⏳ AGUARDANDO', { listingId, readyState: video.readyState });
-      }
-    };
-
-    // Quando o vídeo estiver pronto para tocar
-    const onCanPlay = () => {
-      console.log('📺 CANPLAY', { listingId, readyState: video.readyState });
-      if (isInView) tryPlay();
-    };
-
-    // Capturar erros de carregamento
-    const onError = () => {
-      console.error('🚨 VIDEO_ERROR', { 
-        listingId, 
-        error: video.error?.message,
-        code: video.error?.code,
-        networkState: video.networkState,
-        src: video.src
-      });
-    };
-
-    const onLoadedData = () => {
-      console.log('💾 LOADEDDATA', { listingId });
-    };
-
-    video.addEventListener('canplay', onCanPlay);
-    video.addEventListener('error', onError);
-    video.addEventListener('loadeddata', onLoadedData);
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-          setIsVisible(true);
-          isInView = true;
-          tryPlay();
-        } else {
-          setIsVisible(false);
-          isInView = false;
-          try { video.pause(); } catch {}
-          try { video.currentTime = 0; } catch {}
-        }
-      });
-    }, { threshold: 0.5 });
-
-    observer.observe(video);
-
-    return () => {
-      observer.disconnect();
-      video.removeEventListener('canplay', onCanPlay);
-      video.removeEventListener('error', onError);
-      video.removeEventListener('loadeddata', onLoadedData);
-      try { video.pause(); } catch {}
-    };
-  }, [variant, videoUrl, listingId]);
+    if (!videoRef.current) return;
+    videoRef.current.muted = true;
+  }, [videoUrl]);
 
   // Logar URL para depuração
   useEffect(() => {
@@ -256,16 +180,30 @@ export const VehicleCard = ({
               <video
                 ref={videoRef}
                 src={videoUrl}
+                muted
+                autoPlay
+                playsInline
+                loop
+                preload="auto"
+                crossOrigin="anonymous"
                 className="w-full h-full object-cover feed-video"
                 style={{ aspectRatio: '9/16' }}
-                loop
-                muted
-                playsInline
-                autoPlay
-                preload="auto"
                 poster={image}
                 disablePictureInPicture
-                onPlay={() => pauseOtherVideos(videoRef.current)}
+                onLoadedMetadata={() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  console.log('LOADEDMETADATA', { listingId, readyState: v.readyState, src: v.currentSrc || v.src });
+                  v.play().then(() => {
+                    console.log('PLAY_OK_LOADEDMETADATA', { listingId });
+                  }).catch((err) => {
+                    console.error('ERRO_PLAY_LOADEDMETADATA', err);
+                  });
+                }}
+                onError={() => {
+                  const v = videoRef.current;
+                  console.error('VIDEO_TAG_ERROR', { listingId, error: v?.error, networkState: v?.networkState, src: v?.currentSrc || v?.src });
+                }}
                 {...(isPriority && { fetchpriority: 'high' as any })}
               />
               {videoUrl && (
