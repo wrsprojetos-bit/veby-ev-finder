@@ -75,29 +75,67 @@ export const VehicleCard = ({
   useEffect(() => {
     if (variant !== 'feed' || !videoRef.current || !videoUrl) return;
     const video = videoRef.current;
-    // Garantir muted antes de tentar tocar
     video.muted = true;
 
+    let isInView = false;
+
     const tryPlay = () => {
-      console.log('TRY_PLAY', { listingId, muted: video.muted, readyState: video.readyState, src: video.src });
-      pauseOtherVideos(video);
-      const p = video.play();
-      if (p && typeof p.then === 'function') {
-        p.then(() => {
-          console.log('PLAY_OK', { listingId });
+      console.log('🎬 TRY_PLAY', { 
+        listingId, 
+        muted: video.muted, 
+        readyState: video.readyState,
+        networkState: video.networkState,
+        src: video.src,
+        currentSrc: video.currentSrc
+      });
+
+      // Só tenta dar play se o vídeo estiver carregado
+      if (video.readyState >= 3) { // HAVE_FUTURE_DATA
+        pauseOtherVideos(video);
+        video.play().then(() => {
+          console.log('✅ PLAY_OK', { listingId });
         }).catch((err) => {
-          console.error('ERRO AO DAR PLAY NO VIDEO', err);
+          console.error('❌ ERRO_PLAY', { listingId, error: err.name, message: err.message });
         });
+      } else {
+        console.log('⏳ AGUARDANDO', { listingId, readyState: video.readyState });
       }
     };
+
+    // Quando o vídeo estiver pronto para tocar
+    const onCanPlay = () => {
+      console.log('📺 CANPLAY', { listingId, readyState: video.readyState });
+      if (isInView) tryPlay();
+    };
+
+    // Capturar erros de carregamento
+    const onError = () => {
+      console.error('🚨 VIDEO_ERROR', { 
+        listingId, 
+        error: video.error?.message,
+        code: video.error?.code,
+        networkState: video.networkState,
+        src: video.src
+      });
+    };
+
+    const onLoadedData = () => {
+      console.log('💾 LOADEDDATA', { listingId });
+    };
+
+    video.addEventListener('canplay', onCanPlay);
+    video.addEventListener('error', onError);
+    video.addEventListener('loadeddata', onLoadedData);
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
           setIsVisible(true);
+          isInView = true;
           tryPlay();
         } else {
           setIsVisible(false);
+          isInView = false;
           try { video.pause(); } catch {}
           try { video.currentTime = 0; } catch {}
         }
@@ -108,6 +146,9 @@ export const VehicleCard = ({
 
     return () => {
       observer.disconnect();
+      video.removeEventListener('canplay', onCanPlay);
+      video.removeEventListener('error', onError);
+      video.removeEventListener('loadeddata', onLoadedData);
       try { video.pause(); } catch {}
     };
   }, [variant, videoUrl, listingId]);
