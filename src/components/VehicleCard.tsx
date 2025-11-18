@@ -67,55 +67,46 @@ export const VehicleCard = ({
       const el = videoRef.current;
 
       const tryPlay = async () => {
-        console.log('🎬 Tentando reproduzir vídeo:', { listingId, isMuted, readyState: el.readyState });
-        
-        // Força muted para garantir autoplay
+        // Garante atributo e propriedade muted antes do play (necessário no iOS)
         el.muted = true;
-        
+        el.setAttribute('muted', '');
+
         try {
-          const playPromise = await el.play();
-          console.log('✅ Vídeo reproduzindo com sucesso:', listingId);
-          
-          // Se estava tentando com som, atualiza o estado
-          if (!isMuted) {
-            setIsMuted(true);
-          }
+          await el.play();
+          console.log('✅ play() OK', { listingId, readyState: el.readyState });
+          if (!isMuted) setIsMuted(true);
         } catch (error) {
-          console.error('❌ Erro ao reproduzir vídeo:', { listingId, error });
-          
-          // Tenta uma última vez garantindo que está mutado
-          try {
-            el.muted = true;
-            setIsMuted(true);
-            await el.play();
-            console.log('✅ Vídeo reproduzindo após retry:', listingId);
-          } catch (retryError) {
-            console.error('❌ Falha total ao reproduzir:', { listingId, retryError });
-          }
+          console.warn('⛔ play() falhou, aguardando loadeddata', { listingId, error });
         }
       };
+
+      const onLoadedData = () => {
+        if (el.paused) tryPlay();
+      };
+      const onCanPlay = () => {
+        if (el.paused) tryPlay();
+      };
+      const onError = (e: any) => console.error('🎥 video error', { listingId, e });
+
+      el.addEventListener('loadeddata', onLoadedData);
+      el.addEventListener('canplay', onCanPlay);
+      el.addEventListener('error', onError);
 
       const tryPause = () => {
         if (!el.paused) {
           el.pause();
           el.currentTime = 0;
-          console.log('⏸️ Vídeo pausado:', listingId);
         }
       };
 
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            console.log('👁️ Visibility change:', { 
-              listingId, 
-              isIntersecting: entry.isIntersecting, 
-              ratio: entry.intersectionRatio 
-            });
-            
-            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            const visible = entry.isIntersecting && entry.intersectionRatio > 0.5;
+            if (visible) {
               setIsVisible(true);
-              // Pequeno delay para garantir que o elemento está pronto
-              setTimeout(() => tryPlay(), 100);
+              // pequeno debounce para browsers que atrasam o layout
+              setTimeout(() => tryPlay(), 60);
             } else {
               setIsVisible(false);
               tryPause();
@@ -125,13 +116,28 @@ export const VehicleCard = ({
         { threshold: [0.3, 0.5, 0.75], root: null }
       );
 
+      // Observa visibilidade
       observer.observe(el);
+
+      // Checagem imediata no mount (caso já esteja visível)
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      const intersectHeight = Math.min(rect.bottom, vh) - Math.max(rect.top, 0);
+      const ratio = Math.max(0, Math.min(1, intersectHeight / Math.max(1, rect.height)));
+      if (ratio > 0.5) {
+        setIsVisible(true);
+        tryPlay();
+      }
+
       return () => {
         observer.disconnect();
+        el.removeEventListener('loadeddata', onLoadedData);
+        el.removeEventListener('canplay', onCanPlay);
+        el.removeEventListener('error', onError);
         tryPause();
       };
     }
-  }, [variant, videoUrl, listingId]);
+  }, [variant, videoUrl, listingId, isMuted]);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -228,6 +234,7 @@ export const VehicleCard = ({
         >
           {videoUrl ? (
             <video
+              key={videoUrl}
               ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-cover"
@@ -236,12 +243,19 @@ export const VehicleCard = ({
               muted={isMuted}
               playsInline
               autoPlay
-              preload="metadata"
+              preload="auto"
               poster={image}
-              webkit-playsinline="true"
               disablePictureInPicture
               controls={false}
               {...(isPriority && { fetchpriority: 'high' as any })}
+              onLoadedData={() => {
+                const el = videoRef.current;
+                if (el && el.paused) el.play().catch(() => {});
+              }}
+              onCanPlay={() => {
+                const el = videoRef.current;
+                if (el && el.paused) el.play().catch(() => {});
+              }}
             />
           ) : (
             <img
