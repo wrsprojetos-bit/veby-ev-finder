@@ -42,50 +42,66 @@ const Index = () => {
     enabled: true
   });
 
-  // Fonte única de verdade: baseRecommendations do useProximityFeed
-  const recommendations = baseRecommendations || [];
-  const displayListings = recommendations;
+  // Estado único do feed: tudo que o feed renderiza vem daqui
+  const [feedListings, setFeedListings] = useState<any[]>([]);
+  const displayListings = feedListings;
 
-  // Posicionar feed no anúncio correto quando vindo do Explore
+  // Sincronização do feed normal (sem listing na URL)
   useEffect(() => {
-    if (!recommendations || recommendations.length === 0) {
-      return;
-    }
-
     const listingIdFromUrl = searchParams.get("listing");
+    if (listingIdFromUrl) return; // deep link será tratado em outro efeito
 
-    // Fluxo A: acesso normal (sem listing na URL)
-    if (!listingIdFromUrl) {
-      if (!isFeedReady) {
-        setCurrentIndex(0);
+    if (baseRecommendations && baseRecommendations.length > 0) {
+      setFeedListings(baseRecommendations);
+      setCurrentIndex(0);
+      setIsFeedReady(true);
+    }
+  }, [baseRecommendations, searchParams]);
+
+  // Deep link vindo do /explore - sempre buscar por ID
+  useEffect(() => {
+    const listingIdFromUrl = searchParams.get("listing");
+    if (!listingIdFromUrl) return;
+
+    const loadDeepLinkedListing = async () => {
+      console.log("DEEP_LINK_DEBUG buscando listing por id =", listingIdFromUrl);
+
+      // 1) Buscar o anúncio específico no Supabase
+      const { data, error } = await supabase
+        .from("listings")
+        .select("*, profiles:user_id(*)")
+        .eq("id", listingIdFromUrl)
+        .single();
+
+      if (error) {
+        console.error("DEEP_LINK_DEBUG erro ao buscar listing por id", error);
+        // Em caso de erro, cair para o feed normal
         setIsFeedReady(true);
+        searchParams.delete("listing");
+        setSearchParams(searchParams, { replace: true });
+        return;
       }
-      return;
-    }
 
-    // Fluxo B: vindo do /explore com listing específico
-    console.log("FEED_DEBUG listingIdFromUrl =", listingIdFromUrl);
-    console.log(
-      "FEED_DEBUG recommendations IDs =",
-      recommendations.map((r) => r.id)
-    );
+      console.log("DEEP_LINK_DEBUG anúncio encontrado:", data.id, data.brand_model);
 
-    const index = recommendations.findIndex((r) => r.id === listingIdFromUrl);
-    console.log("FEED_DEBUG index found =", index);
+      // 2) Montar feed começando por esse anúncio
+      const base = baseRecommendations || [];
+      const filtered = base.filter((r) => r.id !== data.id);
+      const merged = [data, ...filtered];
 
-    if (index >= 0) {
-      setCurrentIndex(index);
+      console.log("DEEP_LINK_DEBUG feed montado com", merged.length, "anúncios");
+
+      setFeedListings(merged);
+      setCurrentIndex(0);
       setIsFeedReady(true);
+
+      // 3) Limpar parâmetro da URL
       searchParams.delete("listing");
       setSearchParams(searchParams, { replace: true });
-    } else {
-      // fallback: não tenta mais mexer na lista, apenas marca ready
-      console.log("FEED_DEBUG listing não encontrado em recommendations, usando fallback");
-      setIsFeedReady(true);
-      searchParams.delete("listing");
-      setSearchParams(searchParams, { replace: true });
-    }
-  }, [recommendations, searchParams, isFeedReady, setSearchParams]);
+    };
+
+    loadDeepLinkedListing();
+  }, [baseRecommendations, searchParams, setSearchParams]);
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
@@ -170,11 +186,11 @@ const Index = () => {
   }, [currentIndex, displayListings.length, hasMore, isLoadingMore, loadMore]);
 
   // Logs de sanidade
-  console.log("READY_DEBUG", {
+  console.log("FEED_STATE_DEBUG", {
     isFeedReady,
     currentIndex,
-    len: displayListings.length,
-    ids: displayListings.map((l) => l.id),
+    feedLen: feedListings.length,
+    ids: feedListings.map((l) => l.id),
   });
 
   if (loading || !isFeedReady) {
@@ -305,9 +321,9 @@ const Index = () => {
 
       {/* Content */}
       <main className="pt-14 md:pt-0 md:ml-64">
-        {/* Mobile: Feed vertical com scroll */}
+      {/* Mobile: Feed vertical com scroll */}
         <div className="md:hidden snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] feed-scroll" data-scroll-root="true">
-          {recommendations.map((listing) => (
+          {feedListings.map((listing) => (
             <VehicleCard 
               key={listing.id}
               id={listing.id}
@@ -337,26 +353,26 @@ const Index = () => {
 
         {/* Desktop: Um vídeo único, centralizado, estilo TikTok */}
         <div className="hidden md:flex items-center justify-center h-screen overflow-hidden">
-          {recommendations[currentIndex] && (
+          {feedListings[currentIndex] && (
             <div className="relative w-full h-full flex items-center justify-center">
               <VehicleCard 
-                key={recommendations[currentIndex].id}
-                id={recommendations[currentIndex].id}
-                title={recommendations[currentIndex].brand_model}
-                price={`R$ ${recommendations[currentIndex].price?.toFixed(2).replace('.', ',')}`}
-                location={`${recommendations[currentIndex].city || ''}, ${recommendations[currentIndex].state || ''}`}
-                distance={recommendations[currentIndex].distance_km ? `${recommendations[currentIndex].distance_km.toFixed(1)} km` : "--"}
-                views={recommendations[currentIndex].views}
-                image={recommendations[currentIndex].thumbnail_url || recommendations[currentIndex].images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-                videoUrl={recommendations[currentIndex].video_url}
-                category={recommendations[currentIndex].category}
-                acceptsTrade={recommendations[currentIndex].accepts_trade}
+                key={feedListings[currentIndex].id}
+                id={feedListings[currentIndex].id}
+                title={feedListings[currentIndex].brand_model}
+                price={`R$ ${feedListings[currentIndex].price?.toFixed(2).replace('.', ',')}`}
+                location={`${feedListings[currentIndex].city || ''}, ${feedListings[currentIndex].state || ''}`}
+                distance={feedListings[currentIndex].distance_km ? `${feedListings[currentIndex].distance_km.toFixed(1)} km` : "--"}
+                views={feedListings[currentIndex].views}
+                image={feedListings[currentIndex].thumbnail_url || feedListings[currentIndex].images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                videoUrl={feedListings[currentIndex].video_url}
+                category={feedListings[currentIndex].category}
+                acceptsTrade={feedListings[currentIndex].accepts_trade}
                 variant="feed"
-                sellerId={recommendations[currentIndex].user_id}
-                listingId={recommendations[currentIndex].id}
-                sellerName={recommendations[currentIndex].profiles?.name}
-                sellerAvatar={recommendations[currentIndex].profiles?.photo_url}
-                recommendationReason={recommendations[currentIndex].recommendation_reason}
+                sellerId={feedListings[currentIndex].user_id}
+                listingId={feedListings[currentIndex].id}
+                sellerName={feedListings[currentIndex].profiles?.name}
+                sellerAvatar={feedListings[currentIndex].profiles?.photo_url}
+                recommendationReason={feedListings[currentIndex].recommendation_reason}
                 isPriority={true}
               />
             </div>
