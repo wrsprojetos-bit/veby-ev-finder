@@ -8,6 +8,7 @@ interface ExploreGridCardProps {
   thumbnail?: string; // capa do vídeo ou imagem principal
   videoUrl?: string;  // usado para mostrar ícone de play
   views: number;
+  onClick?: () => void;
 }
 
 export const ExploreGridCard = ({
@@ -17,11 +18,12 @@ export const ExploreGridCard = ({
   thumbnail,
   videoUrl,
   views,
+  onClick,
 }: ExploreGridCardProps) => {
-  const navigate = useNavigate();
-
   const handleClick = () => {
-    navigate(`/listing/${id}`);
+    if (onClick) {
+      onClick();
+    }
   };
 
   const displayImage = thumbnail || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80";

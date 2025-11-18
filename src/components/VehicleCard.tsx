@@ -29,6 +29,7 @@ interface VehicleCardProps {
   sellerAvatar?: string;
   recommendationReason?: string;
   isPriority?: boolean;
+  onCardClick?: () => void;
 }
 
 export const VehicleCard = ({
@@ -49,6 +50,7 @@ export const VehicleCard = ({
   sellerAvatar,
   recommendationReason,
   isPriority = false,
+  onCardClick,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
   const { findOrCreateChat } = useChat();
@@ -158,8 +160,8 @@ export const VehicleCard = ({
 
   if (variant === "list") {
     const handleListClick = () => {
-      if (listingId) {
-        navigate(`/?listing=${listingId}`);
+      if (onCardClick) {
+        onCardClick();
       }
     };
 

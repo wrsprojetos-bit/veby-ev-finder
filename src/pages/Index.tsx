@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import vebyLogo from "@/assets/veby-logo-new.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { LogIn, Search, ChevronUp, ChevronDown } from "lucide-react";
@@ -20,6 +20,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { location } = useGeolocation();
   const isAnimatingRef = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // PASSO 4 e 5: Hook de feed por proximidade com raio progressivo
   const userCity = selectedCity || location.city;
@@ -40,6 +41,20 @@ const Index = () => {
   });
 
   const displayListings = recommendations;
+
+  // Posicionar feed no anúncio correto quando vindo do Explore
+  useEffect(() => {
+    const listingIdFromUrl = searchParams.get('listing');
+    if (listingIdFromUrl && recommendations.length > 0) {
+      const index = recommendations.findIndex(l => l.id === listingIdFromUrl);
+      if (index >= 0) {
+        setCurrentIndex(index);
+        // Limpar parâmetro após posicionar
+        searchParams.delete('listing');
+        setSearchParams(searchParams, { replace: true });
+      }
+    }
+  }, [recommendations, searchParams, setSearchParams]);
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
