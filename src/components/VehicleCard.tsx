@@ -59,30 +59,41 @@ export const VehicleCard = ({
   const [isVisible, setIsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Pausar outros vídeos quando este tocar
-  const pauseOtherVideos = (current?: HTMLVideoElement | null) => {
-    const videos = document.querySelectorAll<HTMLVideoElement>('video.feed-video');
-    videos.forEach((v) => {
-      if (v !== current) {
-        try { v.pause(); } catch {}
-      }
-    });
-  };
-  
   // Rastrear visualização
   useViewTracking(listingId, isVisible && variant === "feed");
 
-  // Controlar mute global do vídeo
+  // Controlar visibilidade e reprodução do vídeo
   useEffect(() => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = isGlobalMuted;
+    const el = videoRef.current;
+    if (!el) return;
 
-    // Se o usuário desmutou, garantir volume e tentar play
-    if (!isGlobalMuted) {
-      videoRef.current.volume = 1;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [isGlobalMuted, videoUrl]);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+          // Pausar outros vídeos
+          document.querySelectorAll<HTMLVideoElement>("video.feed-video").forEach(v => {
+            if (v !== el) v.pause();
+          });
+
+          // Aplicar áudio global
+          el.muted = isGlobalMuted;
+          el.volume = isGlobalMuted ? 0 : 1;
+
+          // Tocar vídeo
+          el.play().catch(() => {});
+          setIsVisible(true);
+        } else {
+          el.pause();
+          setIsVisible(false);
+        }
+      },
+      { threshold: 0.6 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isGlobalMuted]);
 
   // Logar URL para depuração
   useEffect(() => {
@@ -191,7 +202,6 @@ export const VehicleCard = ({
                 ref={videoRef}
                 src={videoUrl}
                 muted
-                autoPlay
                 playsInline
                 loop
                 preload="auto"
