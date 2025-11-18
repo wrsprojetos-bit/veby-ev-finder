@@ -67,35 +67,55 @@ export const VehicleCard = ({
       const el = videoRef.current;
 
       const tryPlay = async () => {
-        el.muted = isMuted;
+        console.log('🎬 Tentando reproduzir vídeo:', { listingId, isMuted, readyState: el.readyState });
+        
+        // Força muted para garantir autoplay
+        el.muted = true;
+        
         try {
-          await el.play();
-        } catch (error) {
-          // Se falhar por restrição de autoplay com som, tenta mutado
+          const playPromise = await el.play();
+          console.log('✅ Vídeo reproduzindo com sucesso:', listingId);
+          
+          // Se estava tentando com som, atualiza o estado
           if (!isMuted) {
-            console.log('Autoplay com som bloqueado. Clique no botão de som para ativar.');
+            setIsMuted(true);
+          }
+        } catch (error) {
+          console.error('❌ Erro ao reproduzir vídeo:', { listingId, error });
+          
+          // Tenta uma última vez garantindo que está mutado
+          try {
             el.muted = true;
             setIsMuted(true);
-            try {
-              await el.play();
-            } catch (e) {
-              console.log('Não foi possível reproduzir o vídeo');
-            }
+            await el.play();
+            console.log('✅ Vídeo reproduzindo após retry:', listingId);
+          } catch (retryError) {
+            console.error('❌ Falha total ao reproduzir:', { listingId, retryError });
           }
         }
       };
 
       const tryPause = () => {
-        el.pause();
-        el.currentTime = 0;
+        if (!el.paused) {
+          el.pause();
+          el.currentTime = 0;
+          console.log('⏸️ Vídeo pausado:', listingId);
+        }
       };
 
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
+            console.log('👁️ Visibility change:', { 
+              listingId, 
+              isIntersecting: entry.isIntersecting, 
+              ratio: entry.intersectionRatio 
+            });
+            
             if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
               setIsVisible(true);
-              tryPlay();
+              // Pequeno delay para garantir que o elemento está pronto
+              setTimeout(() => tryPlay(), 100);
             } else {
               setIsVisible(false);
               tryPause();
@@ -111,7 +131,7 @@ export const VehicleCard = ({
         tryPause();
       };
     }
-  }, [variant, videoUrl, isMuted]);
+  }, [variant, videoUrl, listingId]);
 
   const handleLike = () => {
     requireAuth(() => {
