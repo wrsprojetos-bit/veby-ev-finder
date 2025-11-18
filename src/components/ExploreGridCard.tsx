@@ -21,7 +21,7 @@ export const ExploreGridCard = ({
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/?listing=${id}`);
+    navigate(`/listing/${id}`);
   };
 
   const displayImage = thumbnail || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80";

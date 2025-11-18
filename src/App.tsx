@@ -12,6 +12,7 @@ const Publish = lazy(() => import("./pages/Publish"));
 const Chat = lazy(() => import("./pages/Chat"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Auth = lazy(() => import("./pages/Auth"));
+const Listing = lazy(() => import("./pages/Listing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminIndex = lazy(() => import("./pages/admin/Index"));
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/chat" element={<Chat />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/listing/:id" element={<Listing />} />
             <Route path="/admin/*" element={<AdminIndex />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

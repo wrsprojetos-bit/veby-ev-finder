@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import vebyLogo from "@/assets/veby-logo-new.png";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { LogIn, Search, ChevronUp, ChevronDown } from "lucide-react";
@@ -10,15 +10,12 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { LocationSelector } from "@/components/LocationSelector";
 import { useProximityFeed } from "@/hooks/useProximityFeed";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
-import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
-  const [specificListing, setSpecificListing] = useState<any>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location } = useGeolocation();
@@ -42,10 +39,7 @@ const Index = () => {
     enabled: true
   });
 
-  // Combinar listing específico (se houver) com recommendations
-  const displayListings = specificListing 
-    ? [specificListing, ...recommendations.filter(r => r.id !== specificListing.id)]
-    : recommendations;
+  const displayListings = recommendations;
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
@@ -57,37 +51,6 @@ const Index = () => {
       }, 2000);
     }
   }, []);
-
-  // Buscar listing específico da URL
-  useEffect(() => {
-    const listingId = searchParams.get('listing');
-    if (listingId) {
-      const fetchSpecificListing = async () => {
-        const { data, error } = await supabase
-          .from('listings')
-          .select(`
-            *,
-            profiles:user_id (
-              name,
-              photo_url
-            )
-          `)
-          .eq('id', listingId)
-          .eq('status', 'ativo')
-          .eq('approved', true)
-          .single();
-
-        if (data && !error) {
-          setSpecificListing(data);
-          setCurrentIndex(0);
-        }
-        // Remover parâmetro da URL após carregar
-        searchParams.delete('listing');
-        setSearchParams(searchParams, { replace: true });
-      };
-      fetchSpecificListing();
-    }
-  }, [searchParams, setSearchParams]);
 
   // Usar localização do hook se disponível
   useEffect(() => {
