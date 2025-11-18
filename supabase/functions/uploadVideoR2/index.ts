@@ -88,32 +88,36 @@ serve(async (req) => {
       endpointURL: `https://${s3Endpoint}`,
     });
 
-    // Gerar nome único para o arquivo usando o user ID autenticado
+    // Gerar chave previsível sob o prefixo público (ex.: videos/)
     const timestamp = Date.now();
-    const fileName = `${user.id}/${listingId}_${timestamp}.mp4`;
+    const pathPrefix = (Deno.env.get("R2_PUBLIC_PATH_PREFIX") || "videos").replace(/^\/+|\/+$/g, "");
+    const baseName = `${listingId}_${timestamp}.mp4`;
+    const key = `${pathPrefix}/${baseName}`;
 
     // Converter File para Uint8Array
     const arrayBuffer = await videoFile.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 
-    console.log("Iniciando upload:", { fileName, size: videoFile.size });
+    console.log("Iniciando upload:", { key, size: videoFile.size });
 
-    // Fazer upload para R2
-    await bucket.putObject(fileName, buffer, {
+    // Fazer upload para R2 com Content-Type correto
+    await bucket.putObject(key, buffer, {
       contentType: "video/mp4",
     });
 
-    // URL pública do vídeo usando o endpoint público configurado
-    const publicUrl = `${endpoint}/${bucketName}/${fileName}`;
+    // Construir URL pública usando BASE opcional de CDN
+    const publicBase = (Deno.env.get("R2_PUBLIC_BASE_URL") || "").replace(/\/$/, "");
+    const publicUrl = publicBase ? `${publicBase}/${key}` : `${endpoint}/${bucketName}/${key}`;
 
-    console.log("Upload concluído:", { fileName, size: videoFile.size, publicUrl });
+    console.log("Upload concluído:", { key, size: videoFile.size, publicUrl });
 
     return new Response(
       JSON.stringify({
         success: true,
         video_url: publicUrl,
-        file_name: fileName,
+        file_key: key,
         size: videoFile.size,
+        content_type: "video/mp4",
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

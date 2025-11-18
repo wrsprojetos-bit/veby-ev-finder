@@ -80,7 +80,10 @@ export const VehicleCard = ({
   // Logar URL para depuração
   useEffect(() => {
     console.log('VIDEO_URL_DINAMICO', videoUrl);
-  }, [videoUrl]);
+    if (!videoUrl || !videoUrl.endsWith('.mp4')) {
+      console.warn('VIDEO_URL_INVALIDA', { listingId, videoUrl });
+    }
+  }, [videoUrl, listingId]);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -175,7 +178,7 @@ export const VehicleCard = ({
           className="absolute inset-0 overflow-hidden"
           style={{ aspectRatio: '9/16' }}
         >
-          {videoUrl ? (
+          {videoUrl && videoUrl.endsWith('.mp4') ? (
             <>
               <video
                 ref={videoRef}
