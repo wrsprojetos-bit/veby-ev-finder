@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useGeocode } from "./useGeocode";
 
@@ -26,11 +26,12 @@ export const useProximityFeed = ({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null | undefined>(undefined);
   const [feedMode, setFeedMode] = useState<"local" | "regional" | "national" | "global">("local");
   
   const { getCurrentPosition, geocodeAddress } = useGeocode();
   const PAGE_SIZE = 20;
+  const isFetchingRef = useRef(false);
 
   // PASSO 5: Obter localização do usuário ao abrir o feed
   useEffect(() => {
@@ -68,164 +69,173 @@ export const useProximityFeed = ({
     };
 
     getLocationAtFeedStart();
-  }, [enabled, userCity, userState, getCurrentPosition, geocodeAddress]);
+  }, [enabled, userCity, userState]);
+
+  // Helper: Buscar por distância
+  const fetchByDistance = useCallback(async (radiusKm: number, limit: number, offset: number) => {
+    if (!userLocation) return { data: [], count: 0 };
+
+    try {
+      const { data, error } = await supabase
+        .rpc("get_listings_by_distance", {
+          user_lat: userLocation.lat,
+          user_lng: userLocation.lng,
+          radius_km: radiusKm,
+          p_limit: limit,
+          p_offset: offset
+        });
+
+      if (error) throw error;
+
+      // Buscar perfis separadamente
+      const baseListings = data || [];
+      let finalData = baseListings;
+      
+      if (baseListings.length > 0) {
+        const userIds = [...new Set(baseListings.map((l: any) => l.user_id))];
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id,name,photo_url,location,verified")
+          .in("id", userIds);
+        
+        const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+        finalData = baseListings.map((l: any) => ({
+          ...l,
+          profiles: profilesMap.get(l.user_id) || null,
+        }));
+      }
+
+      return { data: finalData, count: finalData.length };
+    } catch (error) {
+      console.error(`Erro ao buscar anúncios (${radiusKm}km):`, error);
+      return { data: [], count: 0 };
+    }
+  }, [userLocation]);
+
+  // Helper: Buscar feed global (sem filtro de distância)
+  const fetchGlobalFeed = useCallback(async (pageNum: number, isReset: boolean) => {
+    const offset = pageNum * PAGE_SIZE;
+
+    try {
+      const { data, error, count } = await supabase
+        .from("listings")
+        .select("*", { count: "exact" })
+        .eq("status", "ativo")
+        .eq("approved", true)
+        .order("created_at", { ascending: false })
+        .range(offset, offset + PAGE_SIZE - 1);
+
+      if (error) throw error;
+
+      // Buscar perfis separadamente
+      const baseListings = data || [];
+      let finalData = baseListings;
+      
+      if (baseListings.length > 0) {
+        const userIds = [...new Set(baseListings.map((l: any) => l.user_id))];
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id,name,photo_url,location,verified")
+          .in("id", userIds);
+        
+        const profilesMap = new Map((profilesData || []).map((p: any) => [p.id, p]));
+        finalData = baseListings.map((l: any) => ({
+          ...l,
+          profiles: profilesMap.get(l.user_id) || null,
+        }));
+      }
+
+      if (isReset) {
+        setListings(finalData);
+      } else {
+        setListings(prev => [...prev, ...finalData]);
+      }
+
+      setHasMore((count ?? 0) > (offset + PAGE_SIZE));
+      return { data: finalData, count: count ?? 0 };
+    } catch (error) {
+      console.error("Erro ao buscar feed global:", error);
+      return { data: [], count: 0 };
+    }
+  }, []);
 
   // PASSO 4: Buscar anúncios com expansão progressiva de raio
   const fetchWithProgressiveRadius = useCallback(async (pageNum: number, isReset: boolean = false) => {
-    if (!userLocation) {
-      // Sem localização: feed global (sem filtro de distância)
-      console.log("🌍 Modo: Feed Global (sem localização do usuário)");
-      setFeedMode("global");
-      return await fetchGlobalFeed(pageNum, isReset);
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    try {
+      if (!userLocation) {
+        console.log("🌍 Modo: Feed Global (sem localização do usuário)");
+        setFeedMode("global");
+        await fetchGlobalFeed(pageNum, isReset);
+        return;
+      }
+
+      const offset = pageNum * PAGE_SIZE;
+      
+      // PASSO 4: Lógica de raio progressivo
+      // 1. Tentar 20 km
+      let { data, count } = await fetchByDistance(20, PAGE_SIZE, offset);
+      
+      if (count !== null && count < 30 && offset === 0) {
+        console.log(`⚠️ Apenas ${count} anúncios em 20km, expandindo para 50km`);
+        setFeedMode("local");
+        const result50 = await fetchByDistance(50, PAGE_SIZE, offset);
+        data = result50.data;
+        count = result50.count;
+      }
+      
+      if (count !== null && count < 30 && offset === 0) {
+        console.log(`⚠️ Apenas ${count} anúncios em 50km, expandindo para 200km`);
+        setFeedMode("regional");
+        const result200 = await fetchByDistance(200, PAGE_SIZE, offset);
+        data = result200.data;
+        count = result200.count;
+      }
+      
+      if (count !== null && count < 30 && offset === 0) {
+        console.log(`⚠️ Apenas ${count} anúncios em 200km, usando feed global`);
+        setFeedMode("national");
+        await fetchGlobalFeed(pageNum, isReset);
+        return;
+      }
+      
+      if (isReset) {
+        setListings(data || []);
+      } else {
+        setListings(prev => [...prev, ...(data || [])]);
+      }
+
+      setHasMore((count ?? 0) > (offset + PAGE_SIZE));
+    } finally {
+      isFetchingRef.current = false;
     }
+  }, [userLocation, fetchByDistance, fetchGlobalFeed]);
 
-    const offset = pageNum * PAGE_SIZE;
-    
-    // PASSO 4: Lógica de raio progressivo
-    // 1. Tentar 20 km
-    let { data, count } = await fetchByDistance(20, PAGE_SIZE, offset);
-    
-    if (count !== null && count < 30 && offset === 0) {
-      console.log(`⚠️ Apenas ${count} anúncios em 20km, expandindo para 50km`);
-      setFeedMode("local");
-      const result50 = await fetchByDistance(50, PAGE_SIZE, offset);
-      data = result50.data;
-      count = result50.count;
-    }
-    
-    if (count !== null && count < 30 && offset === 0) {
-      console.log(`⚠️ Apenas ${count} anúncios em 50km, expandindo para 200km`);
-      setFeedMode("regional");
-      const result200 = await fetchByDistance(200, PAGE_SIZE, offset);
-      data = result200.data;
-      count = result200.count;
-    }
-    
-    if (count !== null && count < 30 && offset === 0) {
-      console.log(`⚠️ Apenas ${count} anúncios em 200km, usando feed global`);
-      setFeedMode("national");
-      return await fetchGlobalFeed(pageNum, isReset);
-    }
-
-    // Retornar resultados
-    if (isReset) {
-      setListings(data || []);
-    } else {
-      setListings(prev => [...prev, ...(data || [])]);
-    }
-    
-    setHasMore((count ?? 0) > (offset + PAGE_SIZE));
-    return { data, count };
-  }, [userLocation]);
-
-  // Buscar usando função RPC de distância
-  const fetchByDistance = async (radiusKm: number, limit: number, offset: number) => {
-    if (!userLocation) return { data: [], count: 0 };
-
-    const { data, error } = await supabase
-      .rpc('get_listings_by_distance', {
-        user_lat: userLocation.lat,
-        user_lng: userLocation.lng,
-        radius_km: radiusKm,
-        p_limit: limit,
-        p_offset: offset
-      });
-
-    if (error) {
-      console.error("Erro ao buscar por distância:", error);
-      return { data: [], count: 0 };
-    }
-
-    // Buscar perfis separadamente
-    if (data && data.length > 0) {
-      const userIds = [...new Set(data.map((l: any) => l.user_id))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id,name,photo_url,location,verified")
-        .in("id", userIds);
-
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-      const listingsWithProfiles = data.map((listing: any) => ({
-        ...listing,
-        profiles: profilesMap.get(listing.user_id) || null
-      }));
-
-      console.log(`✅ Encontrados ${listingsWithProfiles.length} anúncios dentro de ${radiusKm}km`);
-      return { data: listingsWithProfiles, count: listingsWithProfiles.length };
-    }
-
-    console.log(`✅ Nenhum anúncio encontrado dentro de ${radiusKm}km`);
-    return { data: [], count: 0 };
-  };
-
-  // Buscar feed global (sem filtro de distância)
-  const fetchGlobalFeed = async (pageNum: number, isReset: boolean) => {
-    const offset = pageNum * PAGE_SIZE;
-
-    const query = supabase
-      .from("listings")
-      .select("*", { count: "exact" })
-      .eq("status", "ativo")
-      .eq("approved", true)
-      .order("created_at", { ascending: false })
-      .order("id", { ascending: false })
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      console.error("Erro no feed global:", error);
-      return { data: [], count: 0 };
-    }
-
-    // Buscar perfis separadamente
-    let finalData = data || [];
-    if (data && data.length > 0) {
-      const userIds = [...new Set(data.map((l: any) => l.user_id))];
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("id,name,photo_url,location,verified")
-        .in("id", userIds);
-
-      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
-      finalData = data.map((listing: any) => ({
-        ...listing,
-        profiles: profilesMap.get(listing.user_id) || null
-      }));
-    }
-
-    if (isReset) {
-      setListings(finalData);
-    } else {
-      setListings(prev => [...prev, ...finalData]);
-    }
-
-    setHasMore((count ?? 0) > (offset + PAGE_SIZE));
-    return { data: finalData, count };
-  };
-
-  // Carregar dados
+  // Carregar dados iniciais
   useEffect(() => {
     if (!enabled || userLocation === undefined) return;
 
     const loadInitial = async () => {
       setLoading(true);
       setCurrentPage(0);
+      setListings([]);
       await fetchWithProgressiveRadius(0, true);
       setLoading(false);
     };
 
     loadInitial();
-  }, [enabled, userLocation, fetchWithProgressiveRadius]);
+  }, [enabled, userLocation]);
 
   // Carregar mais
   const loadMore = useCallback(async () => {
-    if (!hasMore || isLoadingMore) return;
+    if (!hasMore || isLoadingMore || isFetchingRef.current) return;
 
     setIsLoadingMore(true);
     const nextPage = currentPage + 1;
-    await fetchWithProgressiveRadius(nextPage, false);
     setCurrentPage(nextPage);
+    await fetchWithProgressiveRadius(nextPage, false);
     setIsLoadingMore(false);
   }, [hasMore, isLoadingMore, currentPage, fetchWithProgressiveRadius]);
 
