@@ -44,17 +44,23 @@ const Index = () => {
 
   // Posicionar feed no anúncio correto quando vindo do Explore
   useEffect(() => {
+    // Aguardar recommendations carregar
+    if (!recommendations || recommendations.length === 0) return;
+    
     const listingIdFromUrl = searchParams.get('listing');
-    if (listingIdFromUrl && recommendations.length > 0) {
-      const index = recommendations.findIndex(l => l.id === listingIdFromUrl);
-      if (index >= 0) {
-        setCurrentIndex(index);
-        // Limpar parâmetro após posicionar
-        searchParams.delete('listing');
-        setSearchParams(searchParams, { replace: true });
-      }
+    if (!listingIdFromUrl) return;
+    
+    // Procurar o índice do anúncio na lista
+    const index = recommendations.findIndex(l => l.id === listingIdFromUrl);
+    
+    // Se encontrou, posicionar o feed nesse índice
+    if (index >= 0) {
+      setCurrentIndex(index);
+      
+      // Limpar o parâmetro da URL após posicionar
+      setSearchParams({}, { replace: true });
     }
-  }, [recommendations, searchParams, setSearchParams]);
+  }, [recommendations.length, searchParams.get('listing')]);
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
