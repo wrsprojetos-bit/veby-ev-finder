@@ -29,6 +29,10 @@ const Explore = () => {
   const { location } = useGeolocation();
   const { addRecentSearch, trackCategoryView } = useUserPreferences();
 
+  const handleOpenInFeed = (id: string) => {
+    navigate(`/?listing=${id}`);
+  };
+
   const { listings, loading, isLoadingMore, hasMore, loadMore } = useInfiniteListings({
     selectedCategory,
     selectedState,
@@ -181,6 +185,7 @@ const Explore = () => {
                     thumbnail={listing.video_thumbnail || listing.thumbnail_url || listing.images?.[0]}
                     videoUrl={listing.video_url}
                     views={listing.views || 0}
+                    onClick={() => handleOpenInFeed(listing.id)}
                   />
                 ))}
               </div>
@@ -212,6 +217,7 @@ const Explore = () => {
                     listingId={listing.id}
                     sellerName={listing.profiles?.name}
                     sellerAvatar={listing.profiles?.photo_url}
+                    onCardClick={() => handleOpenInFeed(listing.id)}
                   />
                 ))}
               </div>
