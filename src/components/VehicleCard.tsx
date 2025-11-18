@@ -54,7 +54,7 @@ export const VehicleCard = ({
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMuted, setIsMuted] = useState(true); // Começa mutado para garantir autoplay
+  const [isMuted, setIsMuted] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -63,81 +63,37 @@ export const VehicleCard = ({
 
   // Auto-play video when in view (TikTok style)
   useEffect(() => {
-    if (variant === "feed" && videoRef.current && videoUrl) {
-      const el = videoRef.current;
+    if (variant !== "feed" || !videoRef.current || !videoUrl) return;
+    
+    const video = videoRef.current;
 
-      const tryPlay = async () => {
-        // Garante atributo e propriedade muted antes do play (necessário no iOS)
-        el.muted = true;
-        el.setAttribute('muted', '');
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            // Vídeo entrou na tela - dar play
+            setIsVisible(true);
+            video.play().catch(() => {
+              console.log('Autoplay bloqueado, vídeo já está muted');
+            });
+          } else {
+            // Vídeo saiu da tela - pausar
+            setIsVisible(false);
+            video.pause();
+            video.currentTime = 0;
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
 
-        try {
-          await el.play();
-          console.log('✅ play() OK', { listingId, readyState: el.readyState });
-          if (!isMuted) setIsMuted(true);
-        } catch (error) {
-          console.warn('⛔ play() falhou, aguardando loadeddata', { listingId, error });
-        }
-      };
+    observer.observe(video);
 
-      const onLoadedData = () => {
-        if (el.paused) tryPlay();
-      };
-      const onCanPlay = () => {
-        if (el.paused) tryPlay();
-      };
-      const onError = (e: any) => console.error('🎥 video error', { listingId, e });
-
-      el.addEventListener('loadeddata', onLoadedData);
-      el.addEventListener('canplay', onCanPlay);
-      el.addEventListener('error', onError);
-
-      const tryPause = () => {
-        if (!el.paused) {
-          el.pause();
-          el.currentTime = 0;
-        }
-      };
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            const visible = entry.isIntersecting && entry.intersectionRatio > 0.5;
-            if (visible) {
-              setIsVisible(true);
-              // pequeno debounce para browsers que atrasam o layout
-              setTimeout(() => tryPlay(), 60);
-            } else {
-              setIsVisible(false);
-              tryPause();
-            }
-          });
-        },
-        { threshold: [0.3, 0.5, 0.75], root: null }
-      );
-
-      // Observa visibilidade
-      observer.observe(el);
-
-      // Checagem imediata no mount (caso já esteja visível)
-      const rect = el.getBoundingClientRect();
-      const vh = window.innerHeight || document.documentElement.clientHeight;
-      const intersectHeight = Math.min(rect.bottom, vh) - Math.max(rect.top, 0);
-      const ratio = Math.max(0, Math.min(1, intersectHeight / Math.max(1, rect.height)));
-      if (ratio > 0.5) {
-        setIsVisible(true);
-        tryPlay();
-      }
-
-      return () => {
-        observer.disconnect();
-        el.removeEventListener('loadeddata', onLoadedData);
-        el.removeEventListener('canplay', onCanPlay);
-        el.removeEventListener('error', onError);
-        tryPause();
-      };
-    }
-  }, [variant, videoUrl, listingId, isMuted]);
+    return () => {
+      observer.disconnect();
+      video.pause();
+    };
+  }, [variant, videoUrl, listingId]);
 
   const handleLike = () => {
     requireAuth(() => {
@@ -234,28 +190,18 @@ export const VehicleCard = ({
         >
           {videoUrl ? (
             <video
-              key={videoUrl}
               ref={videoRef}
               src={videoUrl}
               className="w-full h-full object-cover"
               style={{ aspectRatio: '9/16' }}
               loop
-              muted={isMuted}
+              muted
               playsInline
               autoPlay
               preload="auto"
               poster={image}
               disablePictureInPicture
-              controls={false}
               {...(isPriority && { fetchpriority: 'high' as any })}
-              onLoadedData={() => {
-                const el = videoRef.current;
-                if (el && el.paused) el.play().catch(() => {});
-              }}
-              onCanPlay={() => {
-                const el = videoRef.current;
-                if (el && el.paused) el.play().catch(() => {});
-              }}
             />
           ) : (
             <img
@@ -271,7 +217,7 @@ export const VehicleCard = ({
             />
           )}
           
-          {/* Botão de controle de áudio global */}
+          {/* Botão de controle de áudio */}
           {videoUrl && (
             <button 
               onClick={(e) => {
@@ -280,13 +226,9 @@ export const VehicleCard = ({
                 setIsMuted(newMutedState);
                 if (videoRef.current) {
                   videoRef.current.muted = newMutedState;
-                  // Se estiver ativando o som, tenta tocar
-                  if (!newMutedState) {
-                    videoRef.current.play().catch(() => {});
-                  }
                 }
               }}
-              className="absolute right-4 top-20 bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors"
+              className="absolute right-4 top-20 bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors z-20"
             >
               {isMuted ? (
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
