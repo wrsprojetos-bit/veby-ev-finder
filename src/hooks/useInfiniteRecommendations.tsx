@@ -66,15 +66,7 @@ export const useInfiniteRecommendations = (userCity?: string, userState?: string
 
       const { data: listings, error } = await supabase
         .from("listings")
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            photo_url,
-            location,
-            verified
-          )
-        `)
+        .select("*")
         .eq("status", "ativo")
         .order("created_at", { ascending: false })
         .order("id", { ascending: false })

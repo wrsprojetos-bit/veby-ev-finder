@@ -87,15 +87,7 @@ export const useRecommendations = (userCity?: string, userState?: string) => {
       // Buscar todos os anúncios ativos
       const { data, error } = await supabase
         .from("listings")
-        .select(`
-          *,
-          profiles:user_id (
-            name,
-            photo_url,
-            location,
-            verified
-          )
-        `)
+        .select("*")
         .eq("status", "ativo")
         .order("created_at", { ascending: false })
         .limit(200);

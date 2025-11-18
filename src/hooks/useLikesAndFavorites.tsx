@@ -14,7 +14,7 @@ const usePreferencesUpdate = () => {
       .from('user_preferences')
       .select('liked_listings')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
     
     if (prefs) {
       const liked = [...new Set([...(prefs.liked_listings || []), listingId])];
