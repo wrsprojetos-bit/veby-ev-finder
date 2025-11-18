@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import vebyLogo from "@/assets/veby-logo-new.png";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
@@ -19,6 +19,7 @@ const Index = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location } = useGeolocation();
+  const isAnimatingRef = useRef(false);
   
   // PASSO 4 e 5: Hook de feed por proximidade com raio progressivo
   const userCity = selectedCity || location.city;
@@ -59,19 +60,58 @@ const Index = () => {
     }
   }, [location]);
 
+  // Funções de navegação
+  const goToNextVideo = () => {
+    if (currentIndex < recommendations.length - 1) {
+      isAnimatingRef.current = true;
+      setCurrentIndex(prev => prev + 1);
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 300);
+    }
+  };
+
+  const goToPreviousVideo = () => {
+    if (currentIndex > 0) {
+      isAnimatingRef.current = true;
+      setCurrentIndex(prev => prev - 1);
+      setTimeout(() => {
+        isAnimatingRef.current = false;
+      }, 300);
+    }
+  };
+
   // Navegação por teclado (desktop)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (window.innerWidth >= 768) { // só desktop
-        if (e.key === "ArrowDown" && currentIndex < recommendations.length - 1) {
-          setCurrentIndex(prev => prev + 1);
-        } else if (e.key === "ArrowUp" && currentIndex > 0) {
-          setCurrentIndex(prev => prev - 1);
+      if (window.innerWidth >= 1024) {
+        if (e.key === "ArrowDown") {
+          goToNextVideo();
+        } else if (e.key === "ArrowUp") {
+          goToPreviousVideo();
         }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIndex, recommendations.length]);
+
+  // Navegação por scroll do mouse (desktop)
+  useEffect(() => {
+    if (window.innerWidth < 1024) return;
+
+    const handleWheel = (event: WheelEvent) => {
+      if (isAnimatingRef.current) return;
+
+      if (event.deltaY > 30) {
+        goToNextVideo();
+      } else if (event.deltaY < -30) {
+        goToPreviousVideo();
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    return () => window.removeEventListener("wheel", handleWheel);
   }, [currentIndex, recommendations.length]);
 
   // Carregar mais quando chegar perto do final
@@ -190,21 +230,18 @@ const Index = () => {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+          onClick={goToPreviousVideo}
           disabled={currentIndex === 0}
-          className="hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-full hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronUp className="w-6 h-6" />
         </Button>
-        <div className="text-white/60 text-xs text-center">
-          {currentIndex + 1} / {recommendations.length}
-        </div>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCurrentIndex(prev => Math.min(recommendations.length - 1, prev + 1))}
+          onClick={goToNextVideo}
           disabled={currentIndex >= recommendations.length - 1}
-          className="hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-10 h-10 rounded-full hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronDown className="w-6 h-6" />
         </Button>
