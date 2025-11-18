@@ -9,6 +9,7 @@ import { useLikesAndFavorites } from "@/hooks/useLikesAndFavorites";
 import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useViewTracking } from "@/hooks/useViewTracking";
+import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
 
 interface VehicleCardProps {
   id?: any;
@@ -53,8 +54,8 @@ export const VehicleCard = ({
   const { findOrCreateChat } = useChat();
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
+  const { isGlobalMuted, toggleGlobalMute } = useGlobalAudio();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -71,11 +72,17 @@ export const VehicleCard = ({
   // Rastrear visualização
   useViewTracking(listingId, isVisible && variant === "feed");
 
-  // Autoplay simples: garantir muted e não usar IntersectionObserver
+  // Controlar mute global do vídeo
   useEffect(() => {
     if (!videoRef.current) return;
-    videoRef.current.muted = true;
-  }, [videoUrl]);
+    videoRef.current.muted = isGlobalMuted;
+
+    // Se o usuário desmutou, garantir volume e tentar play
+    if (!isGlobalMuted) {
+      videoRef.current.volume = 1;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isGlobalMuted, videoUrl]);
 
   // Logar URL para depuração
   useEffect(() => {
@@ -234,15 +241,11 @@ export const VehicleCard = ({
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                const newMutedState = !isMuted;
-                setIsMuted(newMutedState);
-                if (videoRef.current) {
-                  videoRef.current.muted = newMutedState;
-                }
+                toggleGlobalMute();
               }}
               className="absolute right-4 top-20 bg-black/50 rounded-full p-2 hover:bg-black/70 transition-colors z-20"
             >
-              {isMuted ? (
+              {isGlobalMuted ? (
                 <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
