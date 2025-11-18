@@ -17,6 +17,7 @@ const Index = () => {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [isFeedReady, setIsFeedReady] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location } = useGeolocation();
@@ -45,11 +46,24 @@ const Index = () => {
     baseRecommendations ?? []
   );
 
+  // Sincronizar baseRecommendations → recommendations (exceto quando há listing na URL)
   useEffect(() => {
-    if (baseRecommendations && baseRecommendations.length > 0 && recommendations.length === 0) {
-      setRecommendations(baseRecommendations);
+    if (!baseRecommendations) return;
+    
+    const listingIdFromUrl = searchParams.get("listing");
+    if (listingIdFromUrl) {
+      // quando há listing na URL, o efeito de posicionamento vai cuidar da lista
+      return;
     }
-  }, [baseRecommendations, recommendations.length]);
+    
+    setRecommendations(baseRecommendations);
+    
+    // Se não há listing na URL e temos recomendações, o feed está pronto
+    if (baseRecommendations.length > 0) {
+      setCurrentIndex(0);
+      setIsFeedReady(true);
+    }
+  }, [baseRecommendations, searchParams]);
 
   const displayListings = recommendations;
 
@@ -90,11 +104,19 @@ const Index = () => {
     if (index >= 0) {
       // Caso 1: o anúncio já está na lista de recomendações
       setCurrentIndex(index);
+      setIsFeedReady(true);
+      
+      // Limpar o parâmetro da URL após posicionar
+      searchParams.delete("listing");
+      setSearchParams(searchParams, { replace: true });
     } else {
       // Caso 2: o anúncio NÃO está em recommendations
       fetchListingById(listingIdFromUrl)
         .then((listing) => {
-          if (!listing) return;
+          if (!listing) {
+            setIsFeedReady(true);
+            return;
+          }
 
           // Evitar duplicar se já tiver esse id
           const filtered = recommendations.filter(
@@ -104,18 +126,20 @@ const Index = () => {
 
           setRecommendations(newList);
           setCurrentIndex(0);
+          setIsFeedReady(true);
+          
+          // Limpar o parâmetro da URL após posicionar
+          searchParams.delete("listing");
+          setSearchParams(searchParams, { replace: true });
         })
         .catch((err) => {
           console.error(
             "FEED_DEBUG erro ao buscar listing específico",
             err
           );
+          setIsFeedReady(true);
         });
     }
-
-    // depois de posicionar, limpar o parâmetro da URL (sem recarregar)
-    searchParams.delete("listing");
-    setSearchParams(searchParams, { replace: true });
   }, [recommendations, searchParams, setSearchParams]);
 
   // Solicitar localização ao abrir pela primeira vez
@@ -200,7 +224,7 @@ const Index = () => {
     }
   }, [currentIndex, displayListings.length, hasMore, isLoadingMore, loadMore]);
 
-  if (loading) {
+  if (loading || !isFeedReady) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <p className="text-white">Carregando anúncios...</p>
@@ -208,7 +232,7 @@ const Index = () => {
     );
   }
 
-  if (displayListings.length === 0 && !loading) {
+  if (displayListings.length === 0) {
     return (
       <div className="min-h-screen bg-black pb-16">
         <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
