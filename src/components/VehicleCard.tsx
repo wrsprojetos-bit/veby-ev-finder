@@ -54,7 +54,7 @@ export const VehicleCard = ({
   const navigate = useNavigate();
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // Começa mutado para garantir autoplay
   const [isVisible, setIsVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   
@@ -93,7 +93,7 @@ export const VehicleCard = ({
       const observer = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
-            if (entry.isIntersecting && entry.intersectionRatio > 0.75) {
+            if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
               setIsVisible(true);
               tryPlay();
             } else {
@@ -102,7 +102,7 @@ export const VehicleCard = ({
             }
           });
         },
-        { threshold: [0.5, 0.75, 1.0], root: null }
+        { threshold: [0.3, 0.5, 0.75], root: null }
       );
 
       observer.observe(el);
@@ -215,7 +215,8 @@ export const VehicleCard = ({
               loop
               muted={isMuted}
               playsInline
-              preload="auto"
+              autoPlay
+              preload="metadata"
               poster={image}
               webkit-playsinline="true"
               disablePictureInPicture
