@@ -42,46 +42,9 @@ const Index = () => {
     enabled: true
   });
 
-  const [recommendations, setRecommendations] = useState(
-    baseRecommendations ?? []
-  );
-
-  // Sincronizar baseRecommendations → recommendations (exceto quando há listing na URL)
-  useEffect(() => {
-    if (!baseRecommendations) return;
-    
-    const listingIdFromUrl = searchParams.get("listing");
-    if (listingIdFromUrl) {
-      // quando há listing na URL, o efeito de posicionamento vai cuidar da lista
-      return;
-    }
-    
-    setRecommendations(baseRecommendations);
-    
-    // Se não há listing na URL e temos recomendações, o feed está pronto
-    if (baseRecommendations.length > 0) {
-      setCurrentIndex(0);
-      setIsFeedReady(true);
-    }
-  }, [baseRecommendations, searchParams]);
-
+  // Fonte única de verdade: baseRecommendations do useProximityFeed
+  const recommendations = baseRecommendations || [];
   const displayListings = recommendations;
-
-  // Função auxiliar para buscar anúncio específico por ID
-  const fetchListingById = async (id: string) => {
-    const { data, error } = await supabase
-      .from("listings")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (error) {
-      console.error("FEED_DEBUG erro no Supabase ao buscar listing por id", error);
-      return null;
-    }
-
-    return data;
-  };
 
   // Posicionar feed no anúncio correto quando vindo do Explore
   useEffect(() => {
@@ -113,37 +76,14 @@ const Index = () => {
     if (index >= 0) {
       setCurrentIndex(index);
       setIsFeedReady(true);
-
-      // limpar parâmetro depois de posicionar
       searchParams.delete("listing");
       setSearchParams(searchParams, { replace: true });
     } else {
-      fetchListingById(listingIdFromUrl)
-        .then((listing) => {
-          if (!listing) {
-            setIsFeedReady(true);
-            return;
-          }
-
-          const filtered = recommendations.filter((r) => r.id !== listing.id);
-          const newList = [listing, ...filtered];
-
-          setRecommendations(newList);
-          setCurrentIndex(0);
-          setIsFeedReady(true);
-
-          // limpar parâmetro depois de posicionar
-          searchParams.delete("listing");
-          setSearchParams(searchParams, { replace: true });
-        })
-        .catch((err) => {
-          console.error(
-            "FEED_DEBUG erro ao buscar listing específico",
-            err
-          );
-          // mesmo em erro, não deixar o feed travado
-          setIsFeedReady(true);
-        });
+      // fallback: não tenta mais mexer na lista, apenas marca ready
+      console.log("FEED_DEBUG listing não encontrado em recommendations, usando fallback");
+      setIsFeedReady(true);
+      searchParams.delete("listing");
+      setSearchParams(searchParams, { replace: true });
     }
   }, [recommendations, searchParams, isFeedReady, setSearchParams]);
 
@@ -228,6 +168,14 @@ const Index = () => {
       loadMore();
     }
   }, [currentIndex, displayListings.length, hasMore, isLoadingMore, loadMore]);
+
+  // Logs de sanidade
+  console.log("READY_DEBUG", {
+    isFeedReady,
+    currentIndex,
+    len: displayListings.length,
+    ids: displayListings.map((l) => l.id),
+  });
 
   if (loading || !isFeedReady) {
     return (
