@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import vebyLogo from "@/assets/veby-logo-new.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { LogIn, Search, ChevronUp, ChevronDown } from "lucide-react";
@@ -10,12 +10,15 @@ import { useGeolocation } from "@/hooks/useGeolocation";
 import { LocationSelector } from "@/components/LocationSelector";
 import { useProximityFeed } from "@/hooks/useProximityFeed";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [specificListing, setSpecificListing] = useState<any>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location } = useGeolocation();
@@ -39,6 +42,11 @@ const Index = () => {
     enabled: true
   });
 
+  // Combinar listing específico (se houver) com recommendations
+  const displayListings = specificListing 
+    ? [specificListing, ...recommendations.filter(r => r.id !== specificListing.id)]
+    : recommendations;
+
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
     const hasRequestedLocation = localStorage.getItem('hasRequestedLocation');
@@ -49,6 +57,37 @@ const Index = () => {
       }, 2000);
     }
   }, []);
+
+  // Buscar listing específico da URL
+  useEffect(() => {
+    const listingId = searchParams.get('listing');
+    if (listingId) {
+      const fetchSpecificListing = async () => {
+        const { data, error } = await supabase
+          .from('listings')
+          .select(`
+            *,
+            profiles:user_id (
+              name,
+              photo_url
+            )
+          `)
+          .eq('id', listingId)
+          .eq('status', 'ativo')
+          .eq('approved', true)
+          .single();
+
+        if (data && !error) {
+          setSpecificListing(data);
+          setCurrentIndex(0);
+        }
+        // Remover parâmetro da URL após carregar
+        searchParams.delete('listing');
+        setSearchParams(searchParams, { replace: true });
+      };
+      fetchSpecificListing();
+    }
+  }, [searchParams, setSearchParams]);
 
   // Usar localização do hook se disponível
   useEffect(() => {
@@ -62,7 +101,7 @@ const Index = () => {
 
   // Funções de navegação
   const goToNextVideo = () => {
-    if (currentIndex < recommendations.length - 1) {
+    if (currentIndex < displayListings.length - 1) {
       isAnimatingRef.current = true;
       setCurrentIndex(prev => prev + 1);
       setTimeout(() => {
@@ -94,7 +133,7 @@ const Index = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, recommendations.length]);
+  }, [currentIndex, displayListings.length]);
 
   // Navegação por scroll do mouse (desktop)
   useEffect(() => {
@@ -112,14 +151,14 @@ const Index = () => {
 
     window.addEventListener("wheel", handleWheel, { passive: true });
     return () => window.removeEventListener("wheel", handleWheel);
-  }, [currentIndex, recommendations.length]);
+  }, [currentIndex, displayListings.length]);
 
   // Carregar mais quando chegar perto do final
   useEffect(() => {
-    if (currentIndex >= recommendations.length - 3 && hasMore && !isLoadingMore) {
+    if (currentIndex >= displayListings.length - 3 && hasMore && !isLoadingMore) {
       loadMore();
     }
-  }, [currentIndex, recommendations.length, hasMore, isLoadingMore, loadMore]);
+  }, [currentIndex, displayListings.length, hasMore, isLoadingMore, loadMore]);
 
   if (loading) {
     return (
@@ -129,7 +168,7 @@ const Index = () => {
     );
   }
 
-  if (recommendations.length === 0 && !loading) {
+  if (displayListings.length === 0 && !loading) {
     return (
       <div className="min-h-screen bg-black pb-16">
         <header className="fixed top-0 left-0 right-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/10">
@@ -240,7 +279,7 @@ const Index = () => {
           variant="ghost"
           size="icon"
           onClick={goToNextVideo}
-          disabled={currentIndex >= recommendations.length - 1}
+          disabled={currentIndex >= displayListings.length - 1}
           className="w-10 h-10 rounded-full hover:bg-white/10 text-white disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <ChevronDown className="w-6 h-6" />

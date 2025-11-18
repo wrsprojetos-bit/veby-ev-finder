@@ -157,8 +157,17 @@ export const VehicleCard = ({
   };
 
   if (variant === "list") {
+    const handleListClick = () => {
+      if (listingId) {
+        navigate(`/?listing=${listingId}`);
+      }
+    };
+
     return (
-      <div className="flex gap-3 p-3 bg-card rounded-xl border border-border hover:border-primary/50 transition-all">
+      <div 
+        onClick={handleListClick}
+        className="flex gap-3 p-3 bg-card rounded-xl border border-border hover:border-primary/50 transition-all cursor-pointer"
+      >
         <div className="relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden" style={{ aspectRatio: '1/1' }}>
           <img src={image} alt={title} className="w-full h-full object-cover" width="96" height="96" style={{ aspectRatio: '1/1' }} decoding="async" loading="lazy" />
           {acceptsTrade && (
