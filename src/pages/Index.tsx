@@ -85,32 +85,39 @@ const Index = () => {
 
   // Posicionar feed no anúncio correto quando vindo do Explore
   useEffect(() => {
-    if (!recommendations || recommendations.length === 0) return;
+    if (!recommendations || recommendations.length === 0) {
+      return;
+    }
 
     const listingIdFromUrl = searchParams.get("listing");
+
+    // Fluxo A: acesso normal (sem listing na URL)
+    if (!listingIdFromUrl) {
+      if (!isFeedReady) {
+        setCurrentIndex(0);
+        setIsFeedReady(true);
+      }
+      return;
+    }
+
+    // Fluxo B: vindo do /explore com listing específico
     console.log("FEED_DEBUG listingIdFromUrl =", listingIdFromUrl);
     console.log(
       "FEED_DEBUG recommendations IDs =",
       recommendations.map((r) => r.id)
     );
 
-    if (!listingIdFromUrl) return;
-
-    const index = recommendations.findIndex(
-      (r) => r.id === listingIdFromUrl
-    );
+    const index = recommendations.findIndex((r) => r.id === listingIdFromUrl);
     console.log("FEED_DEBUG index found =", index);
 
     if (index >= 0) {
-      // Caso 1: o anúncio já está na lista de recomendações
       setCurrentIndex(index);
       setIsFeedReady(true);
-      
-      // Limpar o parâmetro da URL após posicionar
+
+      // limpar parâmetro depois de posicionar
       searchParams.delete("listing");
       setSearchParams(searchParams, { replace: true });
     } else {
-      // Caso 2: o anúncio NÃO está em recommendations
       fetchListingById(listingIdFromUrl)
         .then((listing) => {
           if (!listing) {
@@ -118,17 +125,14 @@ const Index = () => {
             return;
           }
 
-          // Evitar duplicar se já tiver esse id
-          const filtered = recommendations.filter(
-            (r) => r.id !== listing.id
-          );
+          const filtered = recommendations.filter((r) => r.id !== listing.id);
           const newList = [listing, ...filtered];
 
           setRecommendations(newList);
           setCurrentIndex(0);
           setIsFeedReady(true);
-          
-          // Limpar o parâmetro da URL após posicionar
+
+          // limpar parâmetro depois de posicionar
           searchParams.delete("listing");
           setSearchParams(searchParams, { replace: true });
         })
@@ -137,10 +141,11 @@ const Index = () => {
             "FEED_DEBUG erro ao buscar listing específico",
             err
           );
+          // mesmo em erro, não deixar o feed travado
           setIsFeedReady(true);
         });
     }
-  }, [recommendations, searchParams, setSearchParams]);
+  }, [recommendations, searchParams, isFeedReady, setSearchParams]);
 
   // Solicitar localização ao abrir pela primeira vez
   useEffect(() => {
