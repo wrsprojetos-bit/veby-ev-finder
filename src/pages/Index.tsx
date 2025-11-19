@@ -129,6 +129,7 @@ const Index = () => {
     if (location.city && !selectedCity) {
       setSelectedCity(location.city);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
   // Funções de navegação
@@ -165,7 +166,7 @@ const Index = () => {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [currentIndex, displayListings.length]);
+  }, [currentIndex, displayListings.length, goToNextVideo, goToPreviousVideo]);
 
   // Navegação por scroll do mouse (desktop)
   useEffect(() => {
@@ -183,7 +184,7 @@ const Index = () => {
 
     window.addEventListener("wheel", handleWheel, { passive: true });
     return () => window.removeEventListener("wheel", handleWheel);
-  }, [currentIndex, displayListings.length]);
+  }, [currentIndex, displayListings.length, goToNextVideo, goToPreviousVideo]);
 
   // Carregar mais quando chegar perto do final
   useEffect(() => {

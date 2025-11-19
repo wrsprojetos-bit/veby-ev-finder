@@ -51,6 +51,7 @@ const Explore = () => {
     if (location.city && !selectedCity) {
       setSelectedCity(location.city);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
 
