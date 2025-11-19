@@ -30,6 +30,7 @@ interface VehicleCardProps {
   recommendationReason?: string;
   isPriority?: boolean;
   isActive?: boolean;
+  isFeedReady?: boolean;
   onCardClick?: () => void;
 }
 
@@ -52,6 +53,7 @@ export const VehicleCard = ({
   recommendationReason,
   isPriority = false,
   isActive = true,
+  isFeedReady = true,
   onCardClick,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
@@ -66,70 +68,59 @@ export const VehicleCard = ({
   // Rastrear visualização
   useViewTracking(listingId, isVisible && variant === "feed");
 
-  // Controlar visibilidade e reprodução do vídeo
+  // Controlar reprodução do vídeo baseado em isActive e isFeedReady
   useEffect(() => {
-    const el = videoRef.current;
-    if (!el) return;
+    const video = videoRef.current;
+    if (!video) return;
 
     console.log("VIDEO_DEBUG", {
       listingId,
       isActive,
+      isFeedReady,
       variant,
       hasVideoUrl: !!videoUrl,
     });
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        const isIntersecting = entry.isIntersecting && entry.intersectionRatio >= 0.6;
-        
-        console.log("VIDEO_INTERSECTION", {
-          listingId,
-          isIntersecting,
-          intersectionRatio: entry.intersectionRatio,
-          isActive,
-        });
+    if (isActive && isFeedReady) {
+      video.muted = isGlobalMuted;
+      video.volume = isGlobalMuted ? 0 : 1;
 
-        if (isIntersecting && isActive) {
-          // Pausar outros vídeos
-          document.querySelectorAll<HTMLVideoElement>("video.feed-video").forEach(v => {
-            if (v !== el) v.pause();
+      const tryPlay = () => {
+        const p = video.play();
+        if (p !== undefined) {
+          p.then(() => {
+            console.log("VIDEO_AUTOPLAY_OK", listingId);
+            setIsVisible(true);
+          }).catch(err => {
+            console.error("VIDEO_AUTOPLAY_ERR", listingId, err, {
+              readyState: video.readyState,
+              src: video.currentSrc
+            });
           });
-
-          // Aplicar áudio global
-          el.muted = isGlobalMuted;
-          el.volume = isGlobalMuted ? 0 : 1;
-
-          // Tocar vídeo
-          console.log("VIDEO_TRY_PLAY", { 
-            listingId, 
-            readyState: el.readyState, 
-            src: el.src,
-            currentSrc: el.currentSrc 
-          });
-          
-          const playPromise = el.play();
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => {
-                console.log("VIDEO_AUTOPLAY_OK", listingId);
-                setIsVisible(true);
-              })
-              .catch((err) => {
-                console.error("VIDEO_AUTOPLAY_ERR", listingId, err);
-              });
-          }
-        } else {
-          el.pause();
-          setIsVisible(false);
         }
-      },
-      { threshold: 0.6 }
-    );
+      };
 
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isGlobalMuted, isActive, listingId, videoUrl]);
+      if (video.readyState >= 2) {
+        tryPlay();
+      } else {
+        const handler = () => {
+          tryPlay();
+          video.removeEventListener("loadedmetadata", handler);
+        };
+        video.addEventListener("loadedmetadata", handler);
+        
+        return () => {
+          video.removeEventListener("loadedmetadata", handler);
+        };
+      }
+    } else {
+      try {
+        video.pause();
+        video.currentTime = 0;
+        setIsVisible(false);
+      } catch {}
+    }
+  }, [isActive, isFeedReady, videoUrl, isGlobalMuted, listingId]);
 
   // Logar URL para depuração
   useEffect(() => {
@@ -248,6 +239,7 @@ export const VehicleCard = ({
                 src={videoUrl}
                 muted
                 playsInline
+                autoPlay
                 loop
                 preload="auto"
                 crossOrigin="anonymous"
@@ -259,11 +251,6 @@ export const VehicleCard = ({
                   const v = videoRef.current;
                   if (!v) return;
                   console.log('LOADEDMETADATA', { listingId, readyState: v.readyState, src: v.currentSrc || v.src });
-                  v.play().then(() => {
-                    console.log('PLAY_OK_LOADEDMETADATA', { listingId });
-                  }).catch((err) => {
-                    console.error('ERRO_PLAY_LOADEDMETADATA', err);
-                  });
                 }}
                 onError={() => {
                   const v = videoRef.current;
