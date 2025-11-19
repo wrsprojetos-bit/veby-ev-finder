@@ -167,7 +167,6 @@ export const VehicleCard = ({
         {/* Background Video or Image - Full Screen */}
         <div 
           className="absolute inset-0 overflow-hidden"
-          style={{ aspectRatio: '9/16' }}
         >
           {videoUrl && videoUrl.endsWith('.mp4') ? (
             <FeedVideoPlayer
@@ -183,7 +182,6 @@ export const VehicleCard = ({
               src={image}
               alt={title}
               className="w-full h-full object-cover"
-              style={{ aspectRatio: '9/16' }}
               width="500"
               height="889"
               decoding="async"
