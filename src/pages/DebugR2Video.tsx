@@ -81,6 +81,18 @@ export default function DebugR2Video() {
           </div>
         </div>
 
+        {/* Aviso CORS */}
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+          <h3 className="text-yellow-500 font-semibold mb-2">⚠️ Problema de Autoplay?</h3>
+          <p className="text-sm text-white/70 mb-2">
+            Se o vídeo não tocar automaticamente, o bucket R2 provavelmente não tem CORS configurado.
+          </p>
+          <p className="text-sm text-white/70">
+            <strong>Solução:</strong> Configure CORS no bucket R2 via Cloudflare Dashboard.
+            Veja instruções em <code className="bg-white/10 px-1 rounded">CONFIGURAR-CORS-R2.md</code>
+          </p>
+        </div>
+
         {/* Player de teste */}
         <div className="bg-white/5 border border-white/10 rounded-lg overflow-hidden">
           <div className="relative aspect-[9/16] max-h-[600px] mx-auto bg-black flex items-center justify-center">

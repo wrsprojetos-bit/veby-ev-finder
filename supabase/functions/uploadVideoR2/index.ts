@@ -102,6 +102,8 @@ serve(async (req) => {
 
     // Fazer upload para R2 com Content-Type explícito (video/mp4)
     // IMPORTANTE: Content-Type correto é essencial para autoplay funcionar
+    // ATENÇÃO: CORS deve ser configurado no bucket R2 via Cloudflare Dashboard
+    // Sem CORS, o navegador bloqueia autoplay de vídeos cross-origin
     await bucket.putObject(key, buffer, {
       contentType: "video/mp4",
     });
@@ -114,7 +116,8 @@ serve(async (req) => {
       key, 
       size: videoFile.size, 
       publicUrl, 
-      contentType: "video/mp4" 
+      contentType: "video/mp4",
+      cors: "⚠️ Se autoplay não funcionar, configure CORS no bucket R2 (veja CONFIGURAR-CORS-R2.md)"
     });
 
     return new Response(
