@@ -19,6 +19,18 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Debug mobile
+  useEffect(() => {
+    console.log("MOBILE_FEED_DEBUG", {
+      userAgent: navigator.userAgent,
+      isMobile: window.innerWidth < 768,
+      listingId,
+      videoUrl,
+      isActive,
+      isFeedReady,
+    });
+  }, [listingId, videoUrl, isActive, isFeedReady]);
+
   // Tentativa de autoplay segura
   useEffect(() => {
     const video = videoRef.current;
@@ -69,7 +81,7 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
       <video
         ref={videoRef}
         src={videoUrl}
-        className="max-h-full max-w-full object-contain"
+        className="w-full h-full object-cover"
         poster={posterUrl}
         loop
         preload="auto"
@@ -78,6 +90,21 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
         autoPlay
         disablePictureInPicture
         crossOrigin="anonymous"
+        onLoadedMetadata={() => {
+          console.log("VIDEO_LOADED_METADATA", { 
+            listingId, 
+            readyState: videoRef.current?.readyState,
+            videoWidth: videoRef.current?.videoWidth,
+            videoHeight: videoRef.current?.videoHeight,
+          });
+        }}
+        onError={(e) => {
+          console.error("VIDEO_ERROR", { 
+            listingId, 
+            error: videoRef.current?.error,
+            src: videoUrl,
+          });
+        }}
       />
     </div>
   );
