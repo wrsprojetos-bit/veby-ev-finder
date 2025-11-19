@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useViewTracking } from "@/hooks/useViewTracking";
 import { useGlobalAudio } from "@/contexts/GlobalAudioContext";
+import { FeedVideoPlayer } from "./FeedVideoPlayer";
 
 interface VehicleCardProps {
   id?: any;
@@ -62,73 +63,9 @@ export const VehicleCard = ({
   const { isLiked, isFavorited, likesCount, toggleLike, toggleFavorite } = useLikesAndFavorites(listingId);
   const { isGlobalMuted, toggleGlobalMute } = useGlobalAudio();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   
-  // Rastrear visualização
-  useViewTracking(listingId, isVisible && variant === "feed");
-
-  // Controlar reprodução do vídeo baseado em isActive e isFeedReady
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    console.log("VIDEO_DEBUG", {
-      listingId,
-      isActive,
-      isFeedReady,
-      variant,
-      hasVideoUrl: !!videoUrl,
-    });
-
-    if (isActive && isFeedReady) {
-      video.muted = isGlobalMuted;
-      video.volume = isGlobalMuted ? 0 : 1;
-
-      const tryPlay = () => {
-        const p = video.play();
-        if (p !== undefined) {
-          p.then(() => {
-            console.log("VIDEO_AUTOPLAY_OK", listingId);
-            setIsVisible(true);
-          }).catch(err => {
-            console.error("VIDEO_AUTOPLAY_ERR", listingId, err, {
-              readyState: video.readyState,
-              src: video.currentSrc
-            });
-          });
-        }
-      };
-
-      if (video.readyState >= 2) {
-        tryPlay();
-      } else {
-        const handler = () => {
-          tryPlay();
-          video.removeEventListener("loadedmetadata", handler);
-        };
-        video.addEventListener("loadedmetadata", handler);
-        
-        return () => {
-          video.removeEventListener("loadedmetadata", handler);
-        };
-      }
-    } else {
-      try {
-        video.pause();
-        video.currentTime = 0;
-        setIsVisible(false);
-      } catch {}
-    }
-  }, [isActive, isFeedReady, videoUrl, isGlobalMuted, listingId]);
-
-  // Logar URL para depuração
-  useEffect(() => {
-    console.log('VIDEO_URL_DINAMICO', videoUrl);
-    if (!videoUrl || !videoUrl.endsWith('.mp4')) {
-      console.warn('VIDEO_URL_INVALIDA', { listingId, videoUrl });
-    }
-  }, [videoUrl, listingId]);
+  // Rastrear visualização (no feed, o vídeo é ativo quando isActive = true)
+  useViewTracking(listingId, isActive && variant === "feed");
 
   const handleLike = () => {
     requireAuth(() => {
@@ -233,32 +170,14 @@ export const VehicleCard = ({
           style={{ aspectRatio: '9/16' }}
         >
           {videoUrl && videoUrl.endsWith('.mp4') ? (
-            <>
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                muted
-                playsInline
-                autoPlay
-                loop
-                preload="auto"
-                crossOrigin="anonymous"
-                className="w-full h-full object-cover feed-video"
-                style={{ aspectRatio: '9/16' }}
-                poster={image}
-                disablePictureInPicture
-                onLoadedMetadata={() => {
-                  const v = videoRef.current;
-                  if (!v) return;
-                  console.log('LOADEDMETADATA', { listingId, readyState: v.readyState, src: v.currentSrc || v.src });
-                }}
-                onError={() => {
-                  const v = videoRef.current;
-                  console.error('VIDEO_TAG_ERROR', { listingId, error: v?.error, networkState: v?.networkState, src: v?.currentSrc || v?.src });
-                }}
-              {...(isPriority && { fetchpriority: 'high' as any })}
-              />
-            </>
+            <FeedVideoPlayer
+              listingId={listingId}
+              videoUrl={videoUrl}
+              posterUrl={image}
+              isActive={isActive}
+              isFeedReady={isFeedReady}
+              muted={isGlobalMuted}
+            />
           ) : (
             <img
               src={image}
