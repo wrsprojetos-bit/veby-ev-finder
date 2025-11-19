@@ -45,7 +45,6 @@ const Index = () => {
 
   // Estado único do feed: tudo que o feed renderiza vem daqui
   const [feedListings, setFeedListings] = useState<any[]>([]);
-  const [isMuted, setIsMuted] = useState(true); // Mute global do feed
   const displayListings = feedListings;
 
   // Sincronização do feed normal (sem listing na URL)
@@ -202,9 +201,8 @@ const Index = () => {
       currentIndex,
       feedLen: feedListings.length,
       feedIds: feedListings.map((l) => l.id),
-      isMuted,
     });
-  }, [isFeedReady, hasDeepLinked, currentIndex, feedListings, isMuted]);
+  }, [isFeedReady, hasDeepLinked, currentIndex, feedListings]);
 
   if (loading || !isFeedReady) {
     return (
@@ -336,15 +334,6 @@ const Index = () => {
       <main className="pt-14 md:pt-0 md:ml-64">
       {/* Mobile: Feed vertical com scroll */}
         <div className="md:hidden snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] feed-scroll" data-scroll-root="true">
-          {/* Botão de mute global - Mobile */}
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="fixed top-20 right-4 z-50 bg-black/60 text-white rounded-full p-3 hover:bg-black/80 transition-colors"
-            aria-label={isMuted ? "Ativar som" : "Desativar som"}
-          >
-            {isMuted ? "🔇" : "🔊"}
-          </button>
-          
           {feedListings.map((listing, index) => (
             <VehicleCard 
               key={listing.id}
@@ -366,7 +355,6 @@ const Index = () => {
               recommendationReason={listing.recommendation_reason}
               isActive={index === currentIndex}
               isFeedReady={isFeedReady}
-              isMuted={isMuted}
               isPriority={index === 0}
             />
           ))}
@@ -378,16 +366,7 @@ const Index = () => {
         </div>
 
         {/* Desktop: Um vídeo único, centralizado, estilo TikTok */}
-        <div className="hidden md:flex items-center justify-center h-screen overflow-hidden relative">
-          {/* Botão de mute global - Desktop */}
-          <button
-            onClick={() => setIsMuted(!isMuted)}
-            className="fixed top-4 right-4 z-50 bg-black/60 text-white rounded-full p-3 hover:bg-black/80 transition-colors"
-            aria-label={isMuted ? "Ativar som" : "Desativar som"}
-          >
-            {isMuted ? "🔇" : "🔊"}
-          </button>
-
+        <div className="hidden md:flex items-center justify-center h-screen overflow-hidden">
           {feedListings[currentIndex] && (
             <div className="relative w-full h-full flex items-center justify-center">
               <VehicleCard 
@@ -410,7 +389,6 @@ const Index = () => {
                 recommendationReason={feedListings[currentIndex].recommendation_reason}
                 isActive={true}
                 isFeedReady={isFeedReady}
-                isMuted={isMuted}
                 isPriority={true}
               />
             </div>
