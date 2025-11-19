@@ -235,13 +235,8 @@ export const VehicleCard = ({
                   const v = videoRef.current;
                   console.error('VIDEO_TAG_ERROR', { listingId, error: v?.error, networkState: v?.networkState, src: v?.currentSrc || v?.src });
                 }}
-                {...(isPriority && { fetchpriority: 'high' as any })}
+              {...(isPriority && { fetchpriority: 'high' as any })}
               />
-              {videoUrl && (
-                <div className="absolute left-2 bottom-2 z-20 bg-black/60 text-white text-[10px] px-2 py-1 rounded max-w-[90%] break-all">
-                  {videoUrl}
-                </div>
-              )}
             </>
           ) : (
             <img
