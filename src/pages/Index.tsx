@@ -18,6 +18,7 @@ const Index = () => {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [isFeedReady, setIsFeedReady] = useState(false);
+  const [hasDeepLinked, setHasDeepLinked] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { location } = useGeolocation();
@@ -49,14 +50,19 @@ const Index = () => {
   // Sincronização do feed normal (sem listing na URL)
   useEffect(() => {
     const listingIdFromUrl = searchParams.get("listing");
-    if (listingIdFromUrl) return; // deep link será tratado em outro efeito
+    
+    // Se ainda existe listing na URL, quem manda é o efeito de deep link
+    if (listingIdFromUrl) return;
+    
+    // Se já inicializei via deep link, não sobrescreve o feed
+    if (hasDeepLinked) return;
 
     if (baseRecommendations && baseRecommendations.length > 0) {
       setFeedListings(baseRecommendations);
       setCurrentIndex(0);
       setIsFeedReady(true);
     }
-  }, [baseRecommendations, searchParams]);
+  }, [baseRecommendations, searchParams, hasDeepLinked]);
 
   // Deep link vindo do /explore - sempre buscar por ID
   useEffect(() => {
@@ -94,6 +100,7 @@ const Index = () => {
       setFeedListings(merged);
       setCurrentIndex(0);
       setIsFeedReady(true);
+      setHasDeepLinked(true);
 
       // 3) Limpar parâmetro da URL
       searchParams.delete("listing");
@@ -186,11 +193,12 @@ const Index = () => {
   }, [currentIndex, displayListings.length, hasMore, isLoadingMore, loadMore]);
 
   // Logs de sanidade
-  console.log("FEED_STATE_DEBUG", {
+  console.log("FEED_FINAL_DEBUG", {
     isFeedReady,
+    hasDeepLinked,
     currentIndex,
     feedLen: feedListings.length,
-    ids: feedListings.map((l) => l.id),
+    feedIds: feedListings.map((l) => l.id),
   });
 
   if (loading || !isFeedReady) {
