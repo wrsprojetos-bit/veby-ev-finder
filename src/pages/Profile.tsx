@@ -43,6 +43,7 @@ const LikedListings = () => {
     };
 
     fetchLikedListings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (loading) {
@@ -110,6 +111,7 @@ const FavoritedListings = () => {
     };
 
     fetchFavoritedListings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   if (loading) {
@@ -165,6 +167,7 @@ const Profile = () => {
       fetchProfile();
       fetchUserListings();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchProfile = async () => {

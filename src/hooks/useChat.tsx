@@ -113,6 +113,7 @@ export const useChat = () => {
     if (user) {
       fetchChats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const findOrCreateChat = async (listingId: string, sellerId: string) => {

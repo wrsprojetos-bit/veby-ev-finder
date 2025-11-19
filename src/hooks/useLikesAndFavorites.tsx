@@ -42,6 +42,7 @@ export const useLikesAndFavorites = (listingId?: string) => {
       checkFavoriteStatus();
       fetchLikesCount();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listingId, user]);
 
   const checkLikeStatus = async () => {
