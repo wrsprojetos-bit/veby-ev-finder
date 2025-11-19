@@ -15,6 +15,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Listing = lazy(() => import("./pages/Listing"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AdminIndex = lazy(() => import("./pages/admin/Index"));
+const DebugR2Video = lazy(() => import("./pages/DebugR2Video"));
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/listing/:id" element={<Listing />} />
             <Route path="/admin/*" element={<AdminIndex />} />
+            <Route path="/debug-r2-video" element={<DebugR2Video />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

@@ -19,6 +19,30 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Log da URL do vídeo
+  useEffect(() => {
+    console.log("VIDEO_URL_DEBUG", { 
+      listingId, 
+      videoUrl,
+      isR2: videoUrl.includes('r2.dev') || videoUrl.includes('r2.cloudflarestorage') || videoUrl.includes('pub-'),
+    });
+  }, [listingId, videoUrl]);
+
+  // Log do estado do vídeo
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    console.log("VIDEO_READY_DEBUG", {
+      listingId,
+      readyState: video.readyState,
+      paused: video.paused,
+      src: video.currentSrc,
+      isActive,
+      isFeedReady,
+    });
+  }, [listingId, isActive, isFeedReady, videoUrl]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -38,17 +62,39 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
     video.autoplay = true;
 
     const tryPlay = () => {
+      // Forçar muted antes de tentar play
+      video.muted = true;
+      
       const p = video.play();
       if (p !== undefined) {
         p.then(() => {
-          console.log("VIDEO_AUTOPLAY_OK", { listingId, src: video.currentSrc });
+          console.log("VIDEO_AUTOPLAY_OK", { 
+            listingId, 
+            src: video.currentSrc,
+            readyState: video.readyState,
+            paused: video.paused,
+            muted: video.muted,
+            playsInline: (video as any).playsInline,
+          });
         }).catch((err) => {
           console.error("VIDEO_AUTOPLAY_ERR", {
             listingId,
-            err,
+            err: err.message,
+            name: err.name,
             readyState: video.readyState,
             src: video.currentSrc,
+            paused: video.paused,
+            muted: video.muted,
           });
+          
+          // Tentar novamente após 100ms
+          setTimeout(() => {
+            if (video && isActive && isFeedReady) {
+              console.log("VIDEO_RETRY_PLAY", { listingId });
+              video.muted = true;
+              video.play().catch(console.error);
+            }
+          }, 100);
         });
       }
     };
