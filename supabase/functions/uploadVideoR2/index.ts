@@ -100,7 +100,8 @@ serve(async (req) => {
 
     console.log("Iniciando upload:", { key, size: videoFile.size });
 
-    // Fazer upload para R2 com Content-Type correto
+    // Fazer upload para R2 com Content-Type explícito (video/mp4)
+    // IMPORTANTE: Content-Type correto é essencial para autoplay funcionar
     await bucket.putObject(key, buffer, {
       contentType: "video/mp4",
     });
@@ -109,7 +110,12 @@ serve(async (req) => {
     const publicBase = (Deno.env.get("R2_PUBLIC_BASE_URL") || "").replace(/\/$/, "");
     const publicUrl = publicBase ? `${publicBase}/${key}` : `${endpoint}/${bucketName}/${key}`;
 
-    console.log("Upload concluído:", { key, size: videoFile.size, publicUrl });
+    console.log("✅ Upload R2 concluído:", { 
+      key, 
+      size: videoFile.size, 
+      publicUrl, 
+      contentType: "video/mp4" 
+    });
 
     return new Response(
       JSON.stringify({
