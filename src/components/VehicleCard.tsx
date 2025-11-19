@@ -32,6 +32,7 @@ interface VehicleCardProps {
   isPriority?: boolean;
   isActive?: boolean;
   isFeedReady?: boolean;
+  isMuted?: boolean;
   onCardClick?: () => void;
 }
 
@@ -55,6 +56,7 @@ export const VehicleCard = ({
   isPriority = false,
   isActive = true,
   isFeedReady = true,
+  isMuted = true,
   onCardClick,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
@@ -175,7 +177,7 @@ export const VehicleCard = ({
               posterUrl={image}
               isActive={isActive}
               isFeedReady={isFeedReady}
-              isMuted={isGlobalMuted}
+              isMuted={isMuted}
             />
           ) : (
             <img
