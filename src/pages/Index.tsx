@@ -331,7 +331,7 @@ const Index = () => {
       <main className="pt-14 md:pt-0 md:ml-64">
       {/* Mobile: Feed vertical com scroll */}
         <div className="md:hidden snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] feed-scroll" data-scroll-root="true">
-          {feedListings.map((listing) => (
+          {feedListings.map((listing, index) => (
             <VehicleCard 
               key={listing.id}
               id={listing.id}
@@ -350,6 +350,8 @@ const Index = () => {
               sellerName={listing.profiles?.name}
               sellerAvatar={listing.profiles?.photo_url}
               recommendationReason={listing.recommendation_reason}
+              isActive={true}
+              isPriority={index === 0}
             />
           ))}
           <InfiniteScrollTrigger 
@@ -381,6 +383,7 @@ const Index = () => {
                 sellerName={feedListings[currentIndex].profiles?.name}
                 sellerAvatar={feedListings[currentIndex].profiles?.photo_url}
                 recommendationReason={feedListings[currentIndex].recommendation_reason}
+                isActive={true}
                 isPriority={true}
               />
             </div>

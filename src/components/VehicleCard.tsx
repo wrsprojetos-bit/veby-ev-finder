@@ -29,6 +29,7 @@ interface VehicleCardProps {
   sellerAvatar?: string;
   recommendationReason?: string;
   isPriority?: boolean;
+  isActive?: boolean;
   onCardClick?: () => void;
 }
 
@@ -50,6 +51,7 @@ export const VehicleCard = ({
   sellerAvatar,
   recommendationReason,
   isPriority = false,
+  isActive = true,
   onCardClick,
 }: VehicleCardProps) => {
   const { requireAuth, LoginDialog } = useAuthRequired();
@@ -69,10 +71,26 @@ export const VehicleCard = ({
     const el = videoRef.current;
     if (!el) return;
 
+    console.log("VIDEO_DEBUG", {
+      listingId,
+      isActive,
+      variant,
+      hasVideoUrl: !!videoUrl,
+    });
+
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+        const isIntersecting = entry.isIntersecting && entry.intersectionRatio >= 0.6;
+        
+        console.log("VIDEO_INTERSECTION", {
+          listingId,
+          isIntersecting,
+          intersectionRatio: entry.intersectionRatio,
+          isActive,
+        });
+
+        if (isIntersecting && isActive) {
           // Pausar outros vídeos
           document.querySelectorAll<HTMLVideoElement>("video.feed-video").forEach(v => {
             if (v !== el) v.pause();
@@ -83,8 +101,24 @@ export const VehicleCard = ({
           el.volume = isGlobalMuted ? 0 : 1;
 
           // Tocar vídeo
-          el.play().catch(() => {});
-          setIsVisible(true);
+          console.log("VIDEO_TRY_PLAY", { 
+            listingId, 
+            readyState: el.readyState, 
+            src: el.src,
+            currentSrc: el.currentSrc 
+          });
+          
+          const playPromise = el.play();
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log("VIDEO_AUTOPLAY_OK", listingId);
+                setIsVisible(true);
+              })
+              .catch((err) => {
+                console.error("VIDEO_AUTOPLAY_ERR", listingId, err);
+              });
+          }
         } else {
           el.pause();
           setIsVisible(false);
@@ -95,7 +129,7 @@ export const VehicleCard = ({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [isGlobalMuted]);
+  }, [isGlobalMuted, isActive, listingId, videoUrl]);
 
   // Logar URL para depuração
   useEffect(() => {
