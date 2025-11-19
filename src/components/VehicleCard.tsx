@@ -175,7 +175,7 @@ export const VehicleCard = ({
               posterUrl={image}
               isActive={isActive}
               isFeedReady={isFeedReady}
-              muted={isGlobalMuted}
+              isMuted={isGlobalMuted}
             />
           ) : (
             <img
