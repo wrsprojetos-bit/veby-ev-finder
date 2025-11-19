@@ -4,9 +4,9 @@ type FeedVideoPlayerProps = {
   listingId: string;
   videoUrl: string;
   posterUrl?: string;
-  isActive: boolean;     // true quando é o vídeo atual do feed
-  isFeedReady: boolean;  // true quando o feed já decidiu qual vídeo mostrar
-  muted?: boolean;       // estado global de mute (por enquanto pode deixar sempre true)
+  isActive: boolean;
+  isFeedReady: boolean;
+  isMuted: boolean;
 };
 
 export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
@@ -15,23 +15,10 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
   posterUrl,
   isActive,
   isFeedReady,
-  muted = true,
+  isMuted,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Debug mobile
-  useEffect(() => {
-    console.log("MOBILE_FEED_DEBUG", {
-      userAgent: navigator.userAgent,
-      isMobile: window.innerWidth < 768,
-      listingId,
-      videoUrl,
-      isActive,
-      isFeedReady,
-    });
-  }, [listingId, videoUrl, isActive, isFeedReady]);
-
-  // Tentativa de autoplay segura
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -46,7 +33,7 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
     }
 
     // Configurações obrigatórias pra autoplay mobile/desktop
-    video.muted = muted;
+    video.muted = isMuted;
     (video as any).playsInline = true;
     video.autoplay = true;
 
@@ -54,9 +41,14 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
       const p = video.play();
       if (p !== undefined) {
         p.then(() => {
-          console.log("VIDEO_AUTOPLAY_OK", { listingId, src: video.src });
+          console.log("VIDEO_AUTOPLAY_OK", { listingId, src: video.currentSrc });
         }).catch((err) => {
-          console.error("VIDEO_AUTOPLAY_ERR", { listingId, err, readyState: video.readyState, src: video.currentSrc });
+          console.error("VIDEO_AUTOPLAY_ERR", {
+            listingId,
+            err,
+            readyState: video.readyState,
+            src: video.currentSrc,
+          });
         });
       }
     };
@@ -74,37 +66,22 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
         video.removeEventListener("loadedmetadata", onLoaded);
       };
     }
-  }, [isActive, isFeedReady, videoUrl, muted, listingId]);
+  }, [isActive, isFeedReady, isMuted, videoUrl, listingId]);
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-black">
       <video
         ref={videoRef}
         src={videoUrl}
-        className="w-full h-full object-cover"
+        className="max-h-full max-w-full object-contain"
         poster={posterUrl}
         loop
         preload="auto"
-        muted={muted}
+        muted={isMuted}
         playsInline
         autoPlay
         disablePictureInPicture
         crossOrigin="anonymous"
-        onLoadedMetadata={() => {
-          console.log("VIDEO_LOADED_METADATA", { 
-            listingId, 
-            readyState: videoRef.current?.readyState,
-            videoWidth: videoRef.current?.videoWidth,
-            videoHeight: videoRef.current?.videoHeight,
-          });
-        }}
-        onError={(e) => {
-          console.error("VIDEO_ERROR", { 
-            listingId, 
-            error: videoRef.current?.error,
-            src: videoUrl,
-          });
-        }}
       />
     </div>
   );
