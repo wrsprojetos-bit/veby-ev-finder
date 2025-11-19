@@ -350,7 +350,8 @@ const Index = () => {
               sellerName={listing.profiles?.name}
               sellerAvatar={listing.profiles?.photo_url}
               recommendationReason={listing.recommendation_reason}
-              isActive={true}
+              isActive={index === currentIndex}
+              isFeedReady={isFeedReady}
               isPriority={index === 0}
             />
           ))}
@@ -384,6 +385,7 @@ const Index = () => {
                 sellerAvatar={feedListings[currentIndex].profiles?.photo_url}
                 recommendationReason={feedListings[currentIndex].recommendation_reason}
                 isActive={true}
+                isFeedReady={isFeedReady}
                 isPriority={true}
               />
             </div>
