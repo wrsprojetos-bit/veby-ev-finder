@@ -21,10 +21,12 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
 
   // Log da URL do vídeo
   useEffect(() => {
-    console.log("VIDEO_URL_DEBUG", { 
+    console.log("🎬 VIDEO_URL_DEBUG", { 
       listingId, 
       videoUrl,
-      isR2: videoUrl.includes('r2.dev') || videoUrl.includes('r2.cloudflarestorage') || videoUrl.includes('pub-'),
+      videoUrlLength: videoUrl?.length || 0,
+      isR2: videoUrl?.includes('r2.dev') || videoUrl?.includes('r2.cloudflarestorage') || videoUrl?.includes('pub-') || false,
+      isGoogleStorage: videoUrl?.includes('googleapis.com') || false,
     });
   }, [listingId, videoUrl]);
 
