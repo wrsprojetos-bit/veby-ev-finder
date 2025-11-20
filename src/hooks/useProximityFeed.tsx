@@ -62,7 +62,7 @@ export const useProximityFeed = ({
             setUserLocation(null);
           }
         } else {
-          console.log("ℹ️ Sem localização de perfil, usando feed global");
+          console.log("🌍 Sem localização de perfil, ativando feed global");
           setUserLocation(null);
         }
       }
@@ -215,7 +215,13 @@ export const useProximityFeed = ({
 
   // Carregar dados iniciais
   useEffect(() => {
-    if (!enabled || userLocation === undefined) return;
+    if (!enabled) return;
+    
+    // Esperar até que userLocation seja definido (null ou objeto com lat/lng)
+    if (userLocation === undefined) {
+      console.log("⏳ Aguardando definição de localização...");
+      return;
+    }
 
     const loadInitial = async () => {
       setLoading(true);
