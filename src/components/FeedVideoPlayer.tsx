@@ -19,16 +19,34 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Converter URLs R2 privadas para públicas
+  const getPublicVideoUrl = (url: string): string => {
+    // Se for URL R2 privada, converter para pública
+    if (url.includes('r2.cloudflarestorage.com')) {
+      // Extrair o nome do arquivo do caminho
+      const match = url.match(/veby-videos\/[^/]+\/(.+)$/);
+      if (match && match[1]) {
+        const publicUrl = `https://pub-f8bd655895704ae0920c77e678028442.r2.dev/videos/${match[1]}`;
+        console.log("🔄 Convertendo URL R2 privada para pública:", { original: url, converted: publicUrl });
+        return publicUrl;
+      }
+    }
+    return url;
+  };
+
+  const processedVideoUrl = getPublicVideoUrl(videoUrl);
+
   // Log da URL do vídeo
   useEffect(() => {
     console.log("🎬 VIDEO_URL_DEBUG", { 
       listingId, 
-      videoUrl,
-      videoUrlLength: videoUrl?.length || 0,
-      isR2: videoUrl?.includes('r2.dev') || videoUrl?.includes('r2.cloudflarestorage') || videoUrl?.includes('pub-') || false,
-      isGoogleStorage: videoUrl?.includes('googleapis.com') || false,
+      videoUrl: processedVideoUrl,
+      videoUrlLength: processedVideoUrl?.length || 0,
+      isR2: processedVideoUrl?.includes('r2.dev') || processedVideoUrl?.includes('r2.cloudflarestorage') || processedVideoUrl?.includes('pub-') || false,
+      isGoogleStorage: processedVideoUrl?.includes('googleapis.com') || false,
+      wasConverted: processedVideoUrl !== videoUrl
     });
-  }, [listingId, videoUrl]);
+  }, [listingId, videoUrl, processedVideoUrl]);
 
   // Log do estado do vídeo
   useEffect(() => {
@@ -114,13 +132,13 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
         video.removeEventListener("loadedmetadata", onLoaded);
       };
     }
-  }, [isActive, isFeedReady, isMuted, videoUrl, listingId]);
+  }, [isActive, isFeedReady, isMuted, processedVideoUrl, listingId]);
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-black">
       <video
         ref={videoRef}
-        src={videoUrl}
+        src={processedVideoUrl}
         className="max-h-full max-w-full object-contain"
         poster={posterUrl}
         loop
