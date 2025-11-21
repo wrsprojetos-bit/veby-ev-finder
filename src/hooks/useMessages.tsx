@@ -60,12 +60,23 @@ export const useMessages = (chatId: string | null) => {
           filter: `chat_id=eq.${chatId}`,
         },
         (payload) => {
-          setMessages((current) => [...current, payload.new as Message]);
+          console.log("💬 Nova mensagem recebida via realtime:", payload.new);
+          const newMessage = payload.new as Message;
+          setMessages((current) => {
+            // Evitar duplicatas
+            if (current.some(m => m.id === newMessage.id)) {
+              return current;
+            }
+            return [...current, newMessage];
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("📡 Status do canal de mensagens:", status);
+      });
 
     return () => {
+      console.log("🔌 Desconectando canal de mensagens");
       supabase.removeChannel(channel);
     };
   }, [chatId, user]);
