@@ -33,20 +33,18 @@ export const useProximityFeed = ({
   const PAGE_SIZE = 20;
   const isFetchingRef = useRef(false);
 
-  // PASSO 5: Obter localização do usuário ao abrir o feed
+  // PASSO 5: Obter localização do usuário ao abrir o feed (em paralelo)
   useEffect(() => {
     if (!enabled) return;
 
     const getLocationAtFeedStart = async () => {
       try {
-        // Tentar GPS primeiro
         const position = await getCurrentPosition();
         setUserLocation({ lat: position.latitude, lng: position.longitude });
         console.log("📍 Feed: GPS do usuário capturado", position);
       } catch (gpsError) {
         console.warn("⚠️ GPS negado no feed, tentando geocoding do perfil");
         
-        // Se GPS falhar, usar cidade/estado do perfil
         if (userCity && userState) {
           try {
             const geocoded = await geocodeAddress(userCity, userState);
@@ -54,7 +52,6 @@ export const useProximityFeed = ({
               setUserLocation({ lat: geocoded.latitude, lng: geocoded.longitude });
               console.log("📍 Feed: Geocoding aproximado do perfil", geocoded);
             } else {
-              console.log("⚠️ Geocoding falhou, usando feed global");
               setUserLocation(null);
             }
           } catch (geocodeError) {
@@ -62,7 +59,6 @@ export const useProximityFeed = ({
             setUserLocation(null);
           }
         } else {
-          console.log("🌍 Sem localização de perfil, ativando feed global");
           setUserLocation(null);
         }
       }
@@ -241,28 +237,38 @@ export const useProximityFeed = ({
     }
   }, [userLocation, fetchByDistance, fetchGlobalFeed]);
 
-  // Carregar dados iniciais
+  // Carregar dados iniciais IMEDIATAMENTE (feed global primeiro)
   useEffect(() => {
     if (!enabled) return;
-    
-    // Esperar até que userLocation seja definido (null ou objeto com lat/lng)
-    if (userLocation === undefined) {
-      console.log("⏳ Aguardando definição de localização...");
-      return;
-    }
 
     const loadInitial = async () => {
-      console.log("🔄 INICIANDO CARREGAMENTO DO FEED");
+      console.log("🔄 INICIANDO CARREGAMENTO DO FEED (GLOBAL RÁPIDO)");
       setLoading(true);
       setCurrentPage(0);
       setListings([]);
-      await fetchWithProgressiveRadius(0, true);
+      
+      // Carregar feed global imediatamente, sem esperar localização
+      await fetchGlobalFeed(0, true);
+      
       setLoading(false);
       console.log("✅ FEED CARREGADO");
     };
 
     loadInitial();
-  }, [enabled, userLocation, fetchWithProgressiveRadius]);
+  }, [enabled, fetchGlobalFeed]);
+
+  // Atualizar para feed local quando localização chegar
+  useEffect(() => {
+    if (!enabled || !userLocation || userLocation === null) return;
+    
+    console.log("📍 Localização obtida, atualizando para feed local");
+    const updateToLocalFeed = async () => {
+      setCurrentPage(0);
+      await fetchWithProgressiveRadius(0, true);
+    };
+    
+    updateToLocalFeed();
+  }, [userLocation]);
 
   // Carregar mais
   const loadMore = useCallback(async () => {
