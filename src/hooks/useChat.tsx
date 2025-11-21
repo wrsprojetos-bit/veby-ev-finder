@@ -110,9 +110,43 @@ export const useChat = () => {
   };
 
   useEffect(() => {
-    if (user) {
-      fetchChats();
-    }
+    if (!user) return;
+
+    fetchChats();
+
+    // Configurar realtime para atualizar lista quando houver novos chats ou mensagens
+    const channel = supabase
+      .channel('chats-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chats',
+          filter: `user1_id=eq.${user.id},user2_id=eq.${user.id}`,
+        },
+        () => {
+          console.log("🔄 Chat atualizado, recarregando lista");
+          fetchChats();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        (payload) => {
+          console.log("📨 Nova mensagem em algum chat, atualizando lista");
+          fetchChats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
