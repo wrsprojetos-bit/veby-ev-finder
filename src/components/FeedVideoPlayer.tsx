@@ -69,10 +69,8 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
 
     // Se não é o ativo ou o feed ainda não está pronto: pausa e reseta
     if (!isActive || !isFeedReady) {
-      try {
-        video.pause();
-        video.currentTime = 0;
-      } catch {}
+      video.pause();
+      video.currentTime = 0;
       return;
     }
 
@@ -82,54 +80,55 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
     video.autoplay = true;
 
     const tryPlay = () => {
-      // Forçar muted antes de tentar play
+      // Forçar muted antes de tentar play (requerido por browsers)
       video.muted = true;
       
-      const p = video.play();
-      if (p !== undefined) {
-        p.then(() => {
-          console.log("VIDEO_AUTOPLAY_OK", { 
-            listingId, 
-            src: video.currentSrc,
-            readyState: video.readyState,
-            paused: video.paused,
-            muted: video.muted,
-            playsInline: (video as any).playsInline,
-          });
+      // Garantir que o vídeo tem a URL correta
+      if (video.src !== processedVideoUrl) {
+        video.src = processedVideoUrl;
+        video.load();
+      }
+      
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("VIDEO_AUTOPLAY_OK", { listingId, readyState: video.readyState });
+          // Aplicar estado de mute global após play bem sucedido
+          video.muted = isMuted;
         }).catch((err) => {
-          console.error("VIDEO_AUTOPLAY_ERR", {
-            listingId,
-            err: err.message,
-            name: err.name,
-            readyState: video.readyState,
-            src: video.currentSrc,
-            paused: video.paused,
-            muted: video.muted,
-          });
-          
-          // Tentar novamente após 100ms
+          console.warn("VIDEO_AUTOPLAY_RETRY", { listingId, error: err.message });
+          // Retry com delay
           setTimeout(() => {
             if (video && isActive && isFeedReady) {
-              console.log("VIDEO_RETRY_PLAY", { listingId });
               video.muted = true;
-              video.play().catch(console.error);
+              video.play().catch(() => {});
             }
-          }, 100);
+          }, 200);
         });
       }
     };
 
+    // Esperar pelo carregamento mínimo antes de tentar play
     if (video.readyState >= 2) {
-      // Já tem metadata suficiente
       tryPlay();
     } else {
-      const onLoaded = () => {
+      const onCanPlay = () => {
         tryPlay();
-        video.removeEventListener("loadedmetadata", onLoaded);
+        video.removeEventListener("canplay", onCanPlay);
       };
-      video.addEventListener("loadedmetadata", onLoaded);
+      video.addEventListener("canplay", onCanPlay);
+      
+      // Timeout fallback - tentar play mesmo se canplay não disparar
+      const timeoutId = setTimeout(() => {
+        video.removeEventListener("canplay", onCanPlay);
+        if (video.readyState >= 1) {
+          tryPlay();
+        }
+      }, 1000);
+      
       return () => {
-        video.removeEventListener("loadedmetadata", onLoaded);
+        video.removeEventListener("canplay", onCanPlay);
+        clearTimeout(timeoutId);
       };
     }
   }, [isActive, isFeedReady, isMuted, processedVideoUrl, listingId]);

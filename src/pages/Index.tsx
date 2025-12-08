@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import vebyLogo from "@/assets/veby-logo-new.png";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { BottomNav } from "@/components/BottomNav";
@@ -12,12 +12,15 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [visibleIndex, setVisibleIndex] = useState(0); // Para mobile - qual vídeo está visível
   const [isFeedReady, setIsFeedReady] = useState(false);
   const [hasDeepLinked, setHasDeepLinked] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAnimatingRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const feedContainerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
   
   // Hook de feed global (sem geolocalização por enquanto)
   const {
@@ -34,6 +37,32 @@ const Index = () => {
   // Estado único do feed: tudo que o feed renderiza vem daqui
   const [feedListings, setFeedListings] = useState<any[]>([]);
   const displayListings = feedListings;
+
+  // Callback para quando um item se torna visível (mobile)
+  const handleIntersection = useCallback((entries: IntersectionObserverEntry[]) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+        const index = parseInt(entry.target.getAttribute('data-index') || '0', 10);
+        setVisibleIndex(index);
+      }
+    });
+  }, []);
+
+  // Setup IntersectionObserver para mobile
+  useEffect(() => {
+    if (window.innerWidth >= 768) return; // Desktop usa currentIndex
+
+    observerRef.current = new IntersectionObserver(handleIntersection, {
+      threshold: 0.6,
+      root: null,
+    });
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [handleIntersection]);
 
   // Sincronização do feed normal (sem listing na URL)
   useEffect(() => {
@@ -299,28 +328,41 @@ const Index = () => {
       {/* Content */}
       <main className="pt-14 md:pt-0 md:ml-64">
       {/* Mobile: Feed vertical com scroll */}
-        <div className="md:hidden snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] feed-scroll" data-scroll-root="true">
+        <div 
+          ref={feedContainerRef}
+          className="md:hidden snap-y snap-mandatory overflow-y-scroll no-scrollbar h-[calc(100vh-56px)] feed-scroll" 
+          data-scroll-root="true"
+        >
           {feedListings.map((listing, index) => (
-            <VehicleCard 
-              key={listing.id}
-              id={listing.id}
-              title={listing.brand_model}
-              price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
-              location={`${listing.city || ''}, ${listing.state || ''}`}
-              views={listing.views}
-              image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
-              videoUrl={listing.video_url}
-              category={listing.category}
-              acceptsTrade={listing.accepts_trade}
-              variant="feed"
-              sellerId={listing.user_id}
-              listingId={listing.id}
-              sellerName={listing.profiles?.name}
-              sellerAvatar={listing.profiles?.photo_url}
-              isActive={index === currentIndex}
-              isFeedReady={isFeedReady}
-              isPriority={index === 0}
-            />
+            <div 
+              key={listing.id} 
+              data-index={index}
+              ref={(el) => {
+                if (el && observerRef.current) {
+                  observerRef.current.observe(el);
+                }
+              }}
+            >
+              <VehicleCard 
+                id={listing.id}
+                title={listing.brand_model}
+                price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
+                location={`${listing.city || ''}, ${listing.state || ''}`}
+                views={listing.views}
+                image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
+                videoUrl={listing.video_url}
+                category={listing.category}
+                acceptsTrade={listing.accepts_trade}
+                variant="feed"
+                sellerId={listing.user_id}
+                listingId={listing.id}
+                sellerName={listing.profiles?.name}
+                sellerAvatar={listing.profiles?.photo_url}
+                isActive={index === visibleIndex}
+                isFeedReady={isFeedReady}
+                isPriority={index === 0}
+              />
+            </div>
           ))}
           <InfiniteScrollTrigger 
             onLoadMore={loadMore}
