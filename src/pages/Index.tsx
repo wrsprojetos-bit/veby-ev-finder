@@ -6,40 +6,28 @@ import { VehicleCard } from "@/components/VehicleCard";
 import { LogIn, Search, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { LocationSelector } from "@/components/LocationSelector";
 import { useProximityFeed } from "@/hooks/useProximityFeed";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedState, setSelectedState] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [isFeedReady, setIsFeedReady] = useState(false);
   const [hasDeepLinked, setHasDeepLinked] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { location } = useGeolocation();
   const isAnimatingRef = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // PASSO 4 e 5: Hook de feed por proximidade com raio progressivo
-  const userCity = selectedCity || location.city;
-  const userState = selectedState || location.state;
+  // Hook de feed global (sem geolocalização por enquanto)
   const {
     listings: baseRecommendations,
     loading,
     isLoadingMore,
     hasMore,
     loadMore,
-    feedMode,
-    userLocation
   } = useProximityFeed({
     userId: user?.id,
-    userCity: userCity || undefined,
-    userState: userState || undefined,
     enabled: true
   });
 
@@ -109,28 +97,6 @@ const Index = () => {
 
     loadDeepLinkedListing();
   }, [baseRecommendations, searchParams, setSearchParams]);
-
-  // Solicitar localização ao abrir pela primeira vez
-  useEffect(() => {
-    const hasRequestedLocation = localStorage.getItem('hasRequestedLocation');
-    if (!hasRequestedLocation && !location.state) {
-      setTimeout(() => {
-        setShowLocationModal(true);
-        localStorage.setItem('hasRequestedLocation', 'true');
-      }, 2000);
-    }
-  }, []);
-
-  // Usar localização do hook se disponível
-  useEffect(() => {
-    if (location.state && !selectedState) {
-      setSelectedState(location.state);
-    }
-    if (location.city && !selectedCity) {
-      setSelectedCity(location.city);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]);
 
   // Funções de navegação
   const goToNextVideo = () => {
@@ -341,7 +307,6 @@ const Index = () => {
               title={listing.brand_model}
               price={`R$ ${listing.price?.toFixed(2).replace('.', ',')}`}
               location={`${listing.city || ''}, ${listing.state || ''}`}
-              distance={listing.distance_km ? `${listing.distance_km.toFixed(1)} km` : "--"}
               views={listing.views}
               image={listing.thumbnail_url || listing.images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
               videoUrl={listing.video_url}
@@ -352,7 +317,6 @@ const Index = () => {
               listingId={listing.id}
               sellerName={listing.profiles?.name}
               sellerAvatar={listing.profiles?.photo_url}
-              recommendationReason={listing.recommendation_reason}
               isActive={index === currentIndex}
               isFeedReady={isFeedReady}
               isPriority={index === 0}
@@ -375,7 +339,6 @@ const Index = () => {
                 title={feedListings[currentIndex].brand_model}
                 price={`R$ ${feedListings[currentIndex].price?.toFixed(2).replace('.', ',')}`}
                 location={`${feedListings[currentIndex].city || ''}, ${feedListings[currentIndex].state || ''}`}
-                distance={feedListings[currentIndex].distance_km ? `${feedListings[currentIndex].distance_km.toFixed(1)} km` : "--"}
                 views={feedListings[currentIndex].views}
                 image={feedListings[currentIndex].thumbnail_url || feedListings[currentIndex].images?.[0] || "https://images.unsplash.com/photo-1558981852-426c6c22a060?w=800&q=80"}
                 videoUrl={feedListings[currentIndex].video_url}
@@ -386,7 +349,6 @@ const Index = () => {
                 listingId={feedListings[currentIndex].id}
                 sellerName={feedListings[currentIndex].profiles?.name}
                 sellerAvatar={feedListings[currentIndex].profiles?.photo_url}
-                recommendationReason={feedListings[currentIndex].recommendation_reason}
                 isActive={true}
                 isFeedReady={isFeedReady}
                 isPriority={true}
@@ -396,14 +358,6 @@ const Index = () => {
         </div>
       </main>
 
-      <LocationSelector 
-        open={showLocationModal} 
-        onOpenChange={setShowLocationModal}
-        onLocationChange={(state, city) => {
-          setSelectedState(state);
-          setSelectedCity(city);
-        }}
-      />
 
       <BottomNav />
     </div>

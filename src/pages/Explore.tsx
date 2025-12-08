@@ -1,18 +1,16 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { BottomNav } from "@/components/BottomNav";
 import { VehicleCard } from "@/components/VehicleCard";
 import { ExploreGridCard } from "@/components/ExploreGridCard";
 import { Button } from "@/components/ui/button";
-import { Search, LogIn, MapPin, Grid, List } from "lucide-react";
+import { Search, LogIn, Grid, List } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { VEHICLE_TYPES, BRAZILIAN_STATES } from "@/data/categories";
 import { useCities } from "@/hooks/useCities";
-import { useGeolocation } from "@/hooks/useGeolocation";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { LocationSelector } from "@/components/LocationSelector";
 import { useInfiniteListings } from "@/hooks/useInfiniteListings";
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger";
 
@@ -21,12 +19,10 @@ const Explore = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const cities = useCities(selectedState);
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { location } = useGeolocation();
   const { addRecentSearch, trackCategoryView } = useUserPreferences();
 
   const handleOpenInFeed = (id: string) => {
@@ -42,17 +38,6 @@ const Explore = () => {
     onSearchAdd: addRecentSearch,
     userId: user?.id,
   });
-
-  // Usar localização do hook se disponível
-  useEffect(() => {
-    if (location.state && !selectedState) {
-      setSelectedState(location.state);
-    }
-    if (location.city && !selectedCity) {
-      setSelectedCity(location.city);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location]);
 
 
   return (
@@ -85,18 +70,6 @@ const Explore = () => {
               )}
             </Button>
 
-            {/* Localização atual - clicável */}
-            {(location.city || location.state) && (
-              <button
-                onClick={() => setShowLocationModal(true)}
-                className="flex items-center gap-1 px-3 py-2 bg-white/10 rounded-lg text-xs text-white hover:bg-white/20 transition-colors border border-white/20 shrink-0"
-              >
-                <MapPin className="w-4 h-4 text-[#00FF7F]" />
-                <span className="hidden sm:inline max-w-[100px] truncate">
-                  {location.city}, {location.state}
-                </span>
-              </button>
-            )}
 
             {!user && (
               <Button 
@@ -236,14 +209,6 @@ const Explore = () => {
         )}
       </main>
 
-      <LocationSelector 
-        open={showLocationModal} 
-        onOpenChange={setShowLocationModal}
-        onLocationChange={(state, city) => {
-          setSelectedState(state);
-          setSelectedCity(city);
-        }}
-      />
 
       <BottomNav />
     </div>

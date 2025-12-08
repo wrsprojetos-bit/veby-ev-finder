@@ -17,7 +17,7 @@ interface VehicleCardProps {
   title: string;
   price: string;
   location: string;
-  distance: string;
+  distance?: string;
   views: number;
   image: string;
   videoUrl?: string;
