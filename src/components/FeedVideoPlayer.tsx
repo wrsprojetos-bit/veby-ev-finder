@@ -21,47 +21,19 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
 
   // Converter URLs R2 privadas para públicas
   const getPublicVideoUrl = (url: string): string => {
+    if (!url) return url;
+    
     // Se for URL R2 privada, converter para pública
     if (url.includes('r2.cloudflarestorage.com')) {
-      // Extrair o nome do arquivo do caminho
-      const match = url.match(/veby-videos\/[^/]+\/(.+)$/);
+      const match = url.match(/veby-videos\/[^/]+\/(.+?)(\?|$)/);
       if (match && match[1]) {
-        const publicUrl = `https://pub-f8bd655895704ae0920c77e678028442.r2.dev/videos/${match[1]}`;
-        console.log("🔄 Convertendo URL R2 privada para pública:", { original: url, converted: publicUrl });
-        return publicUrl;
+        return `https://pub-f8bd655895704ae0920c77e678028442.r2.dev/videos/${match[1]}`;
       }
     }
     return url;
   };
 
   const processedVideoUrl = getPublicVideoUrl(videoUrl);
-
-  // Log da URL do vídeo
-  useEffect(() => {
-    console.log("🎬 VIDEO_URL_DEBUG", { 
-      listingId, 
-      videoUrl: processedVideoUrl,
-      videoUrlLength: processedVideoUrl?.length || 0,
-      isR2: processedVideoUrl?.includes('r2.dev') || processedVideoUrl?.includes('r2.cloudflarestorage') || processedVideoUrl?.includes('pub-') || false,
-      isGoogleStorage: processedVideoUrl?.includes('googleapis.com') || false,
-      wasConverted: processedVideoUrl !== videoUrl
-    });
-  }, [listingId, videoUrl, processedVideoUrl]);
-
-  // Log do estado do vídeo
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    console.log("VIDEO_READY_DEBUG", {
-      listingId,
-      readyState: video.readyState,
-      paused: video.paused,
-      src: video.currentSrc,
-      isActive,
-      isFeedReady,
-    });
-  }, [listingId, isActive, isFeedReady, videoUrl]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -75,37 +47,31 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
     }
 
     // Configurações obrigatórias pra autoplay mobile/desktop
-    video.muted = isMuted;
-    (video as any).playsInline = true;
-    video.autoplay = true;
+    video.muted = true; // Sempre começar muted para garantir autoplay
+    video.playsInline = true;
 
     const tryPlay = () => {
-      // Forçar muted antes de tentar play (requerido por browsers)
+      if (!video || video.paused === false) return;
+      
       video.muted = true;
       
-      // Garantir que o vídeo tem a URL correta
-      if (video.src !== processedVideoUrl) {
-        video.src = processedVideoUrl;
-        video.load();
-      }
-      
-      const playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          console.log("VIDEO_AUTOPLAY_OK", { listingId, readyState: video.readyState });
+      video.play()
+        .then(() => {
           // Aplicar estado de mute global após play bem sucedido
           video.muted = isMuted;
-        }).catch((err) => {
-          console.warn("VIDEO_AUTOPLAY_RETRY", { listingId, error: err.message });
-          // Retry com delay
-          setTimeout(() => {
-            if (video && isActive && isFeedReady) {
-              video.muted = true;
-              video.play().catch(() => {});
-            }
-          }, 200);
+        })
+        .catch((err) => {
+          console.warn("Autoplay blocked:", err.message);
+          // Retry uma vez após interação do usuário
+          const handleInteraction = () => {
+            video.muted = true;
+            video.play().catch(() => {});
+            document.removeEventListener('click', handleInteraction);
+            document.removeEventListener('touchstart', handleInteraction);
+          };
+          document.addEventListener('click', handleInteraction, { once: true });
+          document.addEventListener('touchstart', handleInteraction, { once: true });
         });
-      }
     };
 
     // Esperar pelo carregamento mínimo antes de tentar play
@@ -118,20 +84,21 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
       };
       video.addEventListener("canplay", onCanPlay);
       
-      // Timeout fallback - tentar play mesmo se canplay não disparar
-      const timeoutId = setTimeout(() => {
-        video.removeEventListener("canplay", onCanPlay);
-        if (video.readyState >= 1) {
-          tryPlay();
-        }
-      }, 1000);
-      
       return () => {
         video.removeEventListener("canplay", onCanPlay);
-        clearTimeout(timeoutId);
       };
     }
   }, [isActive, isFeedReady, isMuted, processedVideoUrl, listingId]);
+
+  // Sincronizar estado de mute quando mudar globalmente
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video && isActive) {
+      video.muted = isMuted;
+    }
+  }, [isMuted, isActive]);
+
+  if (!processedVideoUrl) return null;
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-black">
@@ -142,11 +109,9 @@ export const FeedVideoPlayer: React.FC<FeedVideoPlayerProps> = ({
         poster={posterUrl}
         loop
         preload="auto"
-        muted={isMuted}
+        muted
         playsInline
-        autoPlay
         disablePictureInPicture
-        crossOrigin="anonymous"
       />
     </div>
   );
