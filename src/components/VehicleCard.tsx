@@ -168,7 +168,7 @@ export const VehicleCard = ({
         <div 
           className="absolute inset-0 overflow-hidden"
         >
-          {videoUrl && videoUrl.endsWith('.mp4') ? (
+          {videoUrl && (videoUrl.includes('.mp4') || videoUrl.includes('video')) ? (
             <FeedVideoPlayer
               listingId={listingId}
               videoUrl={videoUrl}
